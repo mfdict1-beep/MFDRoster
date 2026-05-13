@@ -1,0 +1,2021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MFD Roster">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f172a">
+<meta name="description" content="MFD Duty Roster — Dept. of Hydrology & Meteorology, Nepal">
+<title>MFD Duty Roster</title>
+<link rel="manifest" id="pwa-manifest">
+<link rel="apple-touch-icon" id="apple-touch-icon">
+<!-- Google Identity Services -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<!-- SheetJS for XLSX parsing -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#0f172a;--bg2:#1e293b;--bg3:#334155;--bg4:#475569;--border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.16);--text:#f1f5f9;--text2:#94a3b8;--text3:#64748b;--accent:#38bdf8;--abg:rgba(56,189,248,.13);--green:#4ade80;--gbg:rgba(74,222,128,.13);--purple:#a78bfa;--pbg:rgba(167,139,250,.13);--amber:#fbbf24;--ambg:rgba(251,191,36,.13);--red:#f87171;--rbg:rgba(248,113,113,.13);--obs:#f97316;--obsbg:rgba(249,115,22,.13);--fore:#22d3ee;--forebg:rgba(34,211,238,.13);--r:10px;--rl:14px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-tap-highlight-color:transparent}
+input,select,button,textarea{font-family:inherit}
+.screen{display:none;flex-direction:column;min-height:100vh}
+.screen.active{display:flex}
+
+/* LOGIN */
+#s-login{align-items:center;justify-content:center;padding:2rem 1rem;background:var(--bg)}
+.login-logo{width:62px;height:62px;background:var(--abg);border:1px solid var(--accent);border-radius:18px;display:flex;align-items:center;justify-content:center;margin-bottom:1.25rem}
+.login-logo svg{width:32px;height:32px;stroke:var(--accent);fill:none;stroke-width:1.5}
+.login-org{font-size:10px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;text-align:center;margin-bottom:4px}
+.login-title{font-size:20px;font-weight:700;text-align:center;margin-bottom:1.75rem;line-height:1.3}
+.login-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:1.5rem;width:100%;max-width:360px}
+.lbl{font-size:12px;color:var(--text2);margin-bottom:5px;display:block;font-weight:500}
+.inp{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-size:14px;padding:10px 12px;margin-bottom:11px;outline:none;transition:border-color .2s;appearance:none}
+.inp:focus{border-color:var(--accent)}
+.inp option{background:var(--bg2)}
+.btn-pri{width:100%;background:var(--accent);color:#0c1a27;border:none;border-radius:var(--r);padding:11px;font-size:14px;font-weight:700;cursor:pointer;transition:opacity .18s}
+.btn-pri:hover{opacity:.85}
+.login-links{display:flex;justify-content:center;gap:16px;margin-top:1rem;font-size:12px;color:var(--text3)}
+.login-links a{color:var(--accent);text-decoration:none;cursor:pointer}
+.type-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.type-btn{padding:11px 8px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg3);cursor:pointer;text-align:center;transition:all .18s}
+.type-btn.obs.sel{border-color:var(--obs);background:var(--obsbg)}
+.type-btn.fore.sel{border-color:var(--fore);background:var(--forebg)}
+.type-label{font-size:12px;font-weight:700;color:var(--text)}
+.type-sub{font-size:10px;color:var(--text3);margin-top:2px}
+.type-btn.obs.sel .type-label{color:var(--obs)}
+.type-btn.fore.sel .type-label{color:var(--fore)}
+
+/* TOPBAR */
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:11px 15px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;flex-shrink:0}
+.tb-left{display:flex;flex-direction:column}
+.tb-greeting{font-size:10px;color:var(--text3)}
+.tb-name{font-size:15px;font-weight:700}
+.tb-right{display:flex;gap:7px;align-items:center}
+.ib{background:var(--bg3);border:1px solid var(--border);border-radius:8px;width:35px;height:35px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);transition:background .15s;flex-shrink:0}
+.ib:hover{background:var(--border2)}
+.ib svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8}
+.type-badge{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:700;white-space:nowrap}
+.badge-obs{background:var(--obsbg);color:var(--obs);border:1px solid var(--obs)}
+.badge-fore{background:var(--forebg);color:var(--fore);border:1px solid var(--fore)}
+
+/* BANNER */
+.notif-banner{margin:10px 14px 0;border-radius:var(--r);padding:11px 13px;display:none;flex-shrink:0}
+.nb-duty{background:var(--abg);border:1px solid var(--accent)}
+.nb-off{background:var(--gbg);border:1px solid var(--green)}
+.nb-title{font-size:13px;font-weight:700;margin-bottom:2px}
+.nb-body{font-size:12px;color:var(--text2)}
+
+/* TABS */
+.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0}
+.tab-btn{flex:1;padding:10px 4px;font-size:11px;color:var(--text3);background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;border-bottom:2px solid transparent;transition:color .15s}
+.tab-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-pane{display:none;padding:14px;flex:1;overflow-y:auto}
+.tab-pane.active{display:block}
+
+/* MONTH ROW */
+.month-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:9px 13px;gap:8px}
+.month-row select{background:transparent;border:none;color:var(--text);font-size:13px;font-weight:700;outline:none;cursor:pointer;flex:1}
+.month-row select option{background:var(--bg2)}
+.month-meta{font-size:11px;color:var(--text3);white-space:nowrap}
+
+/* SHIFTS */
+.sh{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap}
+.s-OFF{background:rgba(100,116,139,.15);color:var(--text3)}
+.s-MO{background:var(--gbg);color:var(--green)}
+.s-MOS{background:rgba(134,239,172,.15);color:#86efac}
+.s-AON{background:var(--pbg);color:var(--purple)}
+.s-A1{background:var(--abg);color:var(--accent)}
+.s-A2{background:var(--ambg);color:var(--amber)}
+.s-OTH{background:var(--bg3);color:var(--text2)}
+
+/* DAY ROWS */
+.week-block{margin-bottom:18px}
+.wk-lbl{font-size:10px;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:7px}
+.day-row{display:flex;align-items:center;justify-content:space-between;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:5px;gap:8px}
+.day-row.today{border-color:var(--accent);background:var(--abg)}
+.dr-left{display:flex;flex-direction:column;min-width:78px}
+.dr-dn{font-size:10px;color:var(--text3)}
+.dr-date{font-size:14px;font-weight:700}
+.dr-gate{font-size:10px;color:var(--text3)}
+.today-chip{font-size:10px;background:var(--accent);color:#0c1a27;padding:2px 7px;border-radius:20px;font-weight:700;white-space:nowrap}
+
+/* SUMMARY */
+.sum-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px}
+.sum-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px;text-align:center}
+.sum-num{font-size:26px;font-weight:700}
+.sum-lbl{font-size:10px;color:var(--text3);margin-top:2px}
+
+/* CALENDAR */
+.cal-head{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px}
+.cal-hc{text-align:center;font-size:9px;color:var(--text3);padding:3px 0;text-transform:uppercase}
+.cal-body{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-cell{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:4px 3px;min-height:50px}
+.cal-cell.today{border-color:var(--accent)}
+.cal-cell.empty{background:transparent;border-color:transparent}
+.cal-dn{font-size:10px;font-weight:700;color:var(--text2);margin-bottom:2px}
+.cal-cell.today .cal-dn{color:var(--accent)}
+.cal-pip{font-size:8px;padding:1px 3px;border-radius:3px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:1px}
+
+/* TODAY */
+.sec-lbl{font-size:12px;font-weight:700;color:var(--text2);margin:12px 0 8px}
+.duty-row{display:flex;align-items:center;justify-content:space-between;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:5px}
+.dr-person{display:flex;align-items:center;gap:9px}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text2);flex-shrink:0}
+.person-n{font-size:13px;font-weight:600}
+.off-chips{display:flex;flex-wrap:wrap;gap:5px}
+.off-chip{font-size:11px;padding:4px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:20px;color:var(--text3)}
+
+/* ARCHIVE */
+.archive-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.archive-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px;cursor:pointer;transition:all .18s;position:relative;overflow:hidden}
+.archive-card:hover{border-color:var(--accent);background:var(--abg)}
+.archive-card.active-month{border-color:var(--green);background:var(--gbg)}
+.ac-badge{position:absolute;top:8px;right:8px;font-size:9px;padding:2px 6px;border-radius:20px;font-weight:700}
+.ac-obs{background:var(--obsbg);color:var(--obs)}
+.ac-fore{background:var(--forebg);color:var(--fore)}
+.ac-month{font-size:13px;font-weight:700;margin-bottom:3px}
+.ac-nepali{font-size:11px;color:var(--text3)}
+.ac-days{font-size:10px;color:var(--text3);margin-top:5px}
+.archive-view{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:14px;margin-bottom:14px;display:none}
+.archive-view.visible{display:block}
+.av-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.av-title{font-size:14px;font-weight:700}
+.av-close{background:var(--bg3);border:none;color:var(--text2);border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:16px}
+
+/* ADMIN */
+.admin-scroll{flex:1;overflow-y:auto;padding:14px}
+.a-tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.a-tab{padding:6px 13px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap}
+.a-tab.active{background:var(--accent);color:#0c1a27;border-color:var(--accent)}
+.a-pane{display:none}
+.a-pane.active{display:block}
+.a-sec{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:15px;margin-bottom:14px}
+.a-sec h2{font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text)}
+.f-row{margin-bottom:9px}
+.f-lbl{font-size:12px;color:var(--text2);margin-bottom:4px;display:block;font-weight:500}
+.f-inp{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-size:13px;padding:8px 11px;outline:none;transition:border-color .2s;appearance:none}
+.f-inp:focus{border-color:var(--accent)}
+.f-inp option{background:var(--bg2)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.btn-g{background:var(--green);color:#052e16;border:none;border-radius:var(--r);padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .18s}
+.btn-g:hover{opacity:.85}
+.btn-fw{width:100%}
+.btn-d{background:var(--rbg);color:var(--red);border:1px solid var(--red);border-radius:var(--r);padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer}
+.btn-o{background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:var(--r);padding:7px 13px;font-size:12px;font-weight:600;cursor:pointer}
+.btn-a{background:var(--ambg);color:var(--amber);border:1px solid var(--amber);border-radius:var(--r);padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer}
+.btn-sm{padding:5px 10px;font-size:11px}
+.list-row{display:flex;align-items:flex-start;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);gap:8px}
+.list-row:last-child{border-bottom:none}
+.list-main{font-size:13px;font-weight:600}
+.list-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.list-actions{display:flex;gap:5px;align-items:center;flex-shrink:0}
+.staff-add-row{display:flex;gap:7px;margin-top:10px}
+.staff-add-row input{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-size:13px;padding:8px 10px;outline:none}
+.staff-add-row button{background:var(--accent);color:#0c1a27;border:none;border-radius:var(--r);padding:8px 13px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+
+/* DAY BLOCK in add month */
+.day-block{background:var(--bg3);border-radius:var(--r);padding:11px;margin-bottom:8px}
+.day-block-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.day-block-num{font-size:12px;font-weight:700;color:var(--text)}
+.rm-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:0 4px}
+.sh-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)}
+.sh-row:last-child{border-bottom:none}
+.sh-row-name{font-size:12px;color:var(--text)}
+.sh-sel{background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;padding:4px 7px;outline:none;appearance:none}
+.add-day-btn{background:var(--bg3);border:1.5px dashed var(--border2);border-radius:var(--r);width:100%;padding:9px;font-size:12px;color:var(--text2);cursor:pointer;margin-bottom:10px;transition:background .15s}
+.add-day-btn:hover{background:var(--bg)}
+
+/* EDIT MODAL */
+.modal-wrap{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:500;display:flex;align-items:flex-end;justify-content:center}
+.modal-sheet{background:var(--bg2);border-radius:var(--rl) var(--rl) 0 0;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;padding:20px 16px 36px}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:3px}
+.modal-sub{font-size:12px;color:var(--text3);margin-bottom:16px}
+.modal-person-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)}
+.modal-person-row:last-child{border-bottom:none}
+.modal-person-name{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+.modal-sh-sel{background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-size:12px;padding:6px 10px;outline:none;min-width:120px;appearance:none}
+.modal-acts{display:flex;gap:8px;margin-top:16px}
+.modal-acts button{flex:1;padding:10px;border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer;border:none}
+.modal-save{background:var(--green);color:#052e16}
+.modal-cancel{background:var(--bg3);color:var(--text2)}
+
+/* GOOGLE SHEETS */
+.gs-hint{font-size:11px;color:var(--text3);line-height:1.7;margin-top:5px}
+.gs-hint code{background:var(--bg3);padding:1px 5px;border-radius:4px;font-size:10px;color:var(--amber)}
+.gs-status{font-size:12px;padding:8px 11px;border-radius:7px;margin-top:7px;display:none;line-height:1.5}
+.gs-ok{background:var(--gbg);color:var(--green)}
+.gs-err{background:var(--rbg);color:var(--red)}
+.gs-loading{background:var(--ambg);color:var(--amber)}
+.info-box{background:var(--bg3);border-radius:var(--r);padding:10px 13px;font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:11px}
+.divider{height:1px;background:var(--border);margin:12px 0}
+
+/* GOOGLE DRIVE */
+.gdrive-status{font-size:12px;padding:10px 13px;border-radius:var(--r);margin-bottom:10px;line-height:1.5;display:flex;align-items:center;gap:8px}
+.gd-connected{background:var(--gbg);border:1px solid var(--green);color:var(--green)}
+.gd-disconnected{background:var(--ambg);border:1px solid var(--amber);color:var(--amber)}
+.gd-error{background:var(--rbg);border:1px solid var(--red);color:var(--red)}
+.gd-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.gd-dot-green{background:var(--green)}
+.gd-dot-amber{background:var(--amber)}
+.gd-dot-red{background:var(--red)}
+
+/* XLSX UPLOAD */
+.upload-zone{border:2px dashed var(--border2);border-radius:var(--r);padding:28px 16px;text-align:center;cursor:pointer;transition:all .2s;position:relative;margin-bottom:10px}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:var(--abg)}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.uz-icon{font-size:28px;margin-bottom:8px}
+.uz-text{font-size:13px;font-weight:600;color:var(--text2)}
+.uz-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.file-preview{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:10px 13px;margin-bottom:10px;display:none}
+.fp-name{font-size:13px;font-weight:600;color:var(--accent)}
+.fp-info{font-size:11px;color:var(--text3);margin-top:3px}
+.fp-sheets{margin-top:8px;display:flex;flex-wrap:wrap;gap:5px}
+.fp-sheet{font-size:11px;padding:3px 10px;background:var(--bg2);border:1px solid var(--border2);border-radius:20px;color:var(--text2);cursor:pointer;transition:all .15s}
+.fp-sheet.sel{background:var(--abg);border-color:var(--accent);color:var(--accent)}
+
+/* DRIVE FILE LIST */
+.drive-file-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);gap:8px}
+.drive-file-row:last-child{border-bottom:none}
+.dfr-left{display:flex;align-items:center;gap:8px}
+.dfr-icon{font-size:16px}
+.dfr-name{font-size:12px;font-weight:600}
+.dfr-date{font-size:10px;color:var(--text3)}
+.dfr-latest{font-size:9px;padding:2px 6px;background:var(--gbg);color:var(--green);border:1px solid var(--green);border-radius:20px;font-weight:700}
+
+/* SUB-ADMIN */
+.sa-perms{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.perm-tag{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600}
+.pt-all{background:var(--abg);color:var(--accent)}
+.pt-obs{background:var(--obsbg);color:var(--obs)}
+.pt-fore{background:var(--forebg);color:var(--fore)}
+.pill{display:inline-flex;align-items:center;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600;margin-left:6px}
+.pill-obs{background:var(--obsbg);color:var(--obs)}
+.pill-fore{background:var(--forebg);color:var(--fore)}
+
+/* EDIT DAY LIST */
+.ed-day-row{display:flex;align-items:flex-start;gap:8px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:5px}
+.ed-day-left{min-width:68px;flex-shrink:0}
+.ed-day-date{font-size:13px;font-weight:700}
+.ed-day-name{font-size:10px;color:var(--text3)}
+.ed-shifts{flex:1;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.ed-edit-btn{background:none;border:none;color:var(--text3);cursor:pointer;padding:3px;border-radius:5px;flex-shrink:0;transition:color .15s}
+.ed-edit-btn:hover{color:var(--accent)}
+.ed-edit-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* SPINNER */
+.spinner{width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:5px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TOAST */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--green);color:#052e16;padding:9px 20px;border-radius:20px;font-size:13px;font-weight:700;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+.toast.err-t{background:var(--red);color:#fff}
+.toast.info-t{background:var(--accent);color:#0c1a27}
+
+/* DRIVE AUTH MODAL */
+.drive-modal{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:600;display:flex;align-items:center;justify-content:center;padding:16px}
+.drive-modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rl);width:100%;max-width:380px;padding:20px}
+.dm-title{font-size:15px;font-weight:700;margin-bottom:8px}
+.dm-body{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px}
+.dm-acts{display:flex;gap:8px}
+.dm-acts button{flex:1;padding:10px;border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer;border:none}
+
+/* STEP INDICATOR */
+.step-row{display:flex;align-items:center;gap:6px;margin-bottom:10px;padding:8px 12px;background:var(--bg3);border-radius:var(--r)}
+.step-num{width:20px;height:20px;border-radius:50%;background:var(--accent);color:#0c1a27;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-txt{font-size:11px;color:var(--text2)}
+
+/* CURRENT MONTH BADGE */
+.cur-month-badge{background:var(--abg);border:1px solid var(--accent);border-radius:var(--r);padding:8px 12px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.cmb-label{font-size:10px;color:var(--text3)}
+.cmb-name{font-size:13px;font-weight:700;color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════ LOGIN ═══════════ -->
+<div class="screen active" id="s-login">
+  <div class="login-logo">
+    <svg viewBox="0 0 24 24"><path d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
+  </div>
+  <p class="login-org">Dept. of Hydrology &amp; Meteorology · Nepal</p>
+  <h1 class="login-title">MFD Duty Roster</h1>
+  <div class="login-card">
+    <label class="lbl">Select roster type</label>
+    <div class="type-row">
+      <div class="type-btn obs" id="type-obs" onclick="selectType('obs')">
+        <div class="type-label">🔭 Observer</div>
+        <div class="type-sub">AO / AON duties</div>
+      </div>
+      <div class="type-btn fore" id="type-fore" onclick="selectType('fore')">
+        <div class="type-label">🌤 Forecaster</div>
+        <div class="type-sub">MF / AF duties</div>
+      </div>
+    </div>
+    <label class="lbl">Select your name</label>
+    <select class="inp" id="login-name"></select>
+    <button class="btn-pri" onclick="doLogin()">View My Roster</button>
+    <div class="login-links">
+      <a onclick="openAdminLogin()">🔑 Admin panel</a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ APP ═══════════ -->
+<div class="screen" id="s-app">
+  <div class="topbar">
+    <div class="tb-left">
+      <span class="tb-greeting">Welcome,</span>
+      <span class="tb-name" id="app-username"></span>
+    </div>
+    <div class="tb-right">
+      <span class="type-badge" id="app-type-badge"></span>
+      <div class="ib" onclick="requestNotifPerm()" title="Enable notifications">
+        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+      </div>
+      <div class="ib" onclick="doLogout()" title="Log out">
+        <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      </div>
+    </div>
+  </div>
+  <div class="notif-banner" id="notif-banner">
+    <div class="nb-title" id="nb-title"></div>
+    <div class="nb-body" id="nb-body"></div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" id="tb-mine" onclick="showTab('mine')">
+      <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      My Duties
+    </button>
+    <button class="tab-btn" id="tb-cal" onclick="showTab('cal')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Calendar
+    </button>
+    <button class="tab-btn" id="tb-today" onclick="showTab('today')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Today
+    </button>
+    <button class="tab-btn" id="tb-archive" onclick="showTab('archive')">
+      <svg viewBox="0 0 24 24"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+      Archive
+    </button>
+  </div>
+
+  <div class="tab-pane active" id="pane-mine">
+    <div class="month-row">
+      <select id="sel-mine" onchange="renderMine()"></select>
+      <span class="month-meta" id="meta-mine"></span>
+    </div>
+    <div id="mine-list"></div>
+    <div class="sum-grid" id="mine-sum"></div>
+  </div>
+
+  <div class="tab-pane" id="pane-cal">
+    <div class="month-row">
+      <select id="sel-cal" onchange="renderCal()"></select>
+      <span class="month-meta" id="meta-cal"></span>
+    </div>
+    <div class="cal-head">
+      <div class="cal-hc">Sun</div><div class="cal-hc">Mon</div><div class="cal-hc">Tue</div>
+      <div class="cal-hc">Wed</div><div class="cal-hc">Thu</div><div class="cal-hc">Fri</div><div class="cal-hc">Sat</div>
+    </div>
+    <div class="cal-body" id="cal-body"></div>
+  </div>
+
+  <div class="tab-pane" id="pane-today">
+    <div id="today-content"></div>
+  </div>
+
+  <div class="tab-pane" id="pane-archive">
+    <div id="archive-content"></div>
+  </div>
+</div>
+
+<!-- ═══════════ ADMIN ═══════════ -->
+<div class="screen" id="s-admin">
+  <div class="topbar">
+    <div class="tb-left">
+      <span class="tb-greeting">Admin Panel</span>
+      <span class="tb-name" id="admin-name-label"></span>
+    </div>
+    <div class="tb-right">
+      <div class="ib" onclick="backToLogin()">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </div>
+    </div>
+  </div>
+  <div class="admin-scroll">
+    <div class="a-tabs" id="admin-tabs-row">
+      <button class="a-tab active" data-tab="staff" onclick="showAdminTab(this,'staff')">👥 Staff</button>
+      <button class="a-tab" data-tab="roster" onclick="showAdminTab(this,'roster')">📅 Roster</button>
+      <button class="a-tab" data-tab="edit" onclick="showAdminTab(this,'edit')">✏️ Edit Duties</button>
+      <button class="a-tab" data-tab="drive" onclick="showAdminTab(this,'drive')">☁️ Google Drive</button>
+      <button class="a-tab" data-tab="sheets" onclick="showAdminTab(this,'sheets')">🔗 Sheets</button>
+      <button class="a-tab" data-tab="admins" id="masters-tab" onclick="showAdminTab(this,'admins')">🔑 Admins</button>
+    </div>
+
+    <!-- STAFF TAB -->
+    <div class="a-pane active" id="ap-staff">
+      <div class="a-sec">
+        <h2>🔭 Observer Staff</h2>
+        <div id="obs-staff-list"></div>
+        <div class="staff-add-row">
+          <input type="text" id="obs-inp" placeholder="Add observer name…">
+          <button onclick="addStaff('obs')">+ Add</button>
+        </div>
+      </div>
+      <div class="a-sec">
+        <h2>🌤 Forecaster Staff</h2>
+        <div id="fore-staff-list"></div>
+        <div class="staff-add-row">
+          <input type="text" id="fore-inp" placeholder="Add forecaster name…">
+          <button onclick="addStaff('fore')">+ Add</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROSTER TAB -->
+    <div class="a-pane" id="ap-roster">
+      <div class="a-sec">
+        <h2>➕ Add New Month Roster</h2>
+        <div class="g2">
+          <div class="f-row">
+            <label class="f-lbl">Month name (English)</label>
+            <input class="f-inp" id="nm-name" placeholder="e.g. Jestha 2083">
+          </div>
+          <div class="f-row">
+            <label class="f-lbl">Nepali name</label>
+            <input class="f-inp" id="nm-nepali" placeholder="e.g. जेठ २०८३">
+          </div>
+        </div>
+        <div class="g2">
+          <div class="f-row">
+            <label class="f-lbl">Start date (YYYY-MM-DD)</label>
+            <input type="date" class="f-inp" id="nm-start" onchange="refreshDayHeaders()">
+          </div>
+          <div class="f-row">
+            <label class="f-lbl">Roster type</label>
+            <select class="f-inp" id="nm-type" onchange="clearNMDays()">
+              <option value="obs">Observer</option>
+              <option value="fore">Forecaster</option>
+            </select>
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:10px">Add each day below. Dates auto-fill from start date.</p>
+        <div id="nm-days-list"></div>
+        <button class="add-day-btn" onclick="addNMDay()">+ Add day</button>
+        <button class="btn-g btn-fw" onclick="saveNewMonth()">💾 Save Month</button>
+      </div>
+      <div class="a-sec">
+        <h2>📋 Existing Months</h2>
+        <div id="existing-months"></div>
+      </div>
+    </div>
+
+    <!-- EDIT DUTIES TAB -->
+    <div class="a-pane" id="ap-edit">
+      <div class="a-sec">
+        <h2>✏️ Edit Duties on a Specific Date</h2>
+        <div class="info-box">Admin-only: Select a roster type and month, then tap <strong>Edit ✏️</strong> on any day to change individual duties. Only admins can modify duty assignments.</div>
+        <div class="g2">
+          <div class="f-row">
+            <label class="f-lbl">Roster type</label>
+            <select class="f-inp" id="ed-type" onchange="populateEdMonths();renderEditList()">
+              <option value="obs">Observer</option>
+              <option value="fore">Forecaster</option>
+            </select>
+          </div>
+          <div class="f-row">
+            <label class="f-lbl">Month</label>
+            <select class="f-inp" id="ed-month" onchange="renderEditList()"></select>
+          </div>
+        </div>
+        <div id="ed-day-list"></div>
+      </div>
+    </div>
+
+    <!-- GOOGLE DRIVE TAB -->
+    <div class="a-pane" id="ap-drive">
+      <div class="a-sec">
+        <h2>☁️ Google Drive — Roster Folder</h2>
+        <div class="info-box">
+          Connected to the MFD Roster folder on Google Drive.<br>
+          <strong>Upload XLSX</strong> files (e.g. <code>Jestha_Roster_mfd.xlsx</code>) from your device — they will be saved to Drive and imported into the app automatically.
+          <div style="margin-top:6px;font-size:10px;color:var(--text3)">📁 Folder: <a href="https://drive.google.com/drive/folders/1lQeZ-6W76YlbYGvmiAch2ZoyeFWc5K4U" target="_blank" style="color:var(--accent)">Open in Google Drive ↗</a></div>
+        </div>
+
+        <!-- Drive connection status -->
+        <div id="drive-status-box" class="gdrive-status gd-disconnected">
+          <div class="gd-dot gd-dot-amber"></div>
+          <div>
+            <strong>Not connected</strong><br>
+            <span style="font-size:11px;opacity:.8">Connect Google Drive to upload XLSX rosters directly to the folder</span>
+          </div>
+        </div>
+
+        <div class="step-row">
+          <div class="step-num">1</div>
+          <div class="step-txt">Connect your Google account (allows uploading to the Roster folder)</div>
+        </div>
+        <button class="btn-o btn-fw" id="drive-connect-btn" onclick="connectGoogleDrive()" style="margin-bottom:10px">
+          <span id="drive-connect-label">🔗 Connect Google Drive</span>
+        </button>
+
+        <div id="drive-folder-section" style="display:none">
+          <div class="divider"></div>
+          <div class="step-row">
+            <div class="step-num">2</div>
+            <div class="step-txt">Browse files already in the Roster folder</div>
+          </div>
+          <button class="btn-g btn-fw" onclick="scanDriveFolder()" style="margin-bottom:10px">
+            🔍 Browse Roster Folder
+          </button>
+          <div id="drive-scan-status" class="gs-status"></div>
+          <div id="drive-file-list" style="margin-top:12px"></div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="step-row">
+          <div class="step-num" id="upload-step-num">2</div>
+          <div class="step-txt">Upload XLSX from your device — import into app &amp; save to Drive</div>
+        </div>
+
+        <div class="upload-zone" id="upload-zone" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+          <input type="file" id="xlsx-file-input" accept=".xlsx,.xls" onchange="handleFileSelect(event)">
+          <div class="uz-icon">📂</div>
+          <div class="uz-text">Drop XLSX file here or tap to browse</div>
+          <div class="uz-sub">Supports: Jestha_Roster_mfd.xlsx, Baisakh_Roster_mfd.xlsx, etc.</div>
+        </div>
+        <div class="file-preview" id="file-preview">
+          <div class="fp-name" id="fp-filename"></div>
+          <div class="fp-info" id="fp-fileinfo"></div>
+          <div style="font-size:11px;color:var(--text2);margin-top:8px;margin-bottom:4px">Select sheet tab:</div>
+          <div class="fp-sheets" id="fp-sheets"></div>
+        </div>
+        <div class="g2" style="margin-top:8px">
+          <div class="f-row">
+            <label class="f-lbl">Month name (English)</label>
+            <input class="f-inp" id="xlsx-mname" placeholder="e.g. Jestha 2083">
+          </div>
+          <div class="f-row">
+            <label class="f-lbl">Nepali name</label>
+            <input class="f-inp" id="xlsx-mnepali" placeholder="e.g. जेठ २०८३">
+          </div>
+        </div>
+        <div class="f-row">
+          <label class="f-lbl">Roster type</label>
+          <select class="f-inp" id="xlsx-type">
+            <option value="obs">Observer</option>
+            <option value="fore">Forecaster</option>
+          </select>
+        </div>
+        <button class="btn-g btn-fw" onclick="importXLSX()" style="margin-top:4px" id="xlsx-import-btn">⬇️ Import from XLSX</button>
+        <div id="xlsx-status" class="gs-status"></div>
+
+        <!-- Upload to Drive button — shown after successful import -->
+        <div id="drive-upload-section" style="display:none;margin-top:10px">
+          <div class="divider"></div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:8px">✅ Imported successfully! Also save this file to Google Drive?</div>
+          <button class="btn-o btn-fw" id="drive-upload-btn" onclick="uploadFileToDrive()">
+            ☁️ Upload to Google Drive Roster Folder
+          </button>
+          <div id="drive-upload-status" class="gs-status"></div>
+        </div>
+      </div>
+
+      <div class="a-sec">
+        <h2>📦 Uploaded Roster Files (Archive)</h2>
+        <div class="info-box" style="font-size:11px">All roster files uploaded this session are listed below. The latest month is auto-selected when users view the app.</div>
+        <div id="drive-archive-list"></div>
+      </div>
+    </div>
+
+    <!-- GOOGLE SHEETS TAB -->
+    <div class="a-pane" id="ap-sheets">
+      <div class="a-sec">
+        <h2>🔗 Google Sheets Import</h2>
+        <div class="info-box">
+          No API key needed. Paste the shareable link of your Google Sheet.<br><br>
+          <strong>How:</strong> Open sheet → Share → "Anyone with the link → Viewer" → copy link.
+        </div>
+        <p style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">🔭 Observer Roster Sheet</p>
+        <div class="f-row">
+          <label class="f-lbl">Google Sheet URL (Observer)</label>
+          <input class="f-inp" id="gs-obs-url" placeholder="https://docs.google.com/spreadsheets/d/…/edit">
+        </div>
+        <div class="f-row">
+          <label class="f-lbl">Sheet tab name (Observer)</label>
+          <input class="f-inp" id="gs-obs-tab" placeholder="e.g. Jestha (AO)">
+          <div class="gs-hint">Tab name at the bottom of your Google Sheet. Leave blank for first sheet.</div>
+        </div>
+        <div class="divider"></div>
+        <p style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">🌤 Forecaster Roster Sheet</p>
+        <div class="f-row">
+          <label class="f-lbl">Google Sheet URL (Forecaster) — optional</label>
+          <input class="f-inp" id="gs-fore-url" placeholder="https://docs.google.com/spreadsheets/d/…/edit">
+        </div>
+        <div class="f-row">
+          <label class="f-lbl">Sheet tab name (Forecaster)</label>
+          <input class="f-inp" id="gs-fore-tab" placeholder="e.g. Jestha (Fore)">
+        </div>
+        <div class="divider"></div>
+        <div class="g2">
+          <div class="f-row">
+            <label class="f-lbl">Month name (English)</label>
+            <input class="f-inp" id="gs-mname" placeholder="e.g. Jestha 2083">
+          </div>
+          <div class="f-row">
+            <label class="f-lbl">Nepali name</label>
+            <input class="f-inp" id="gs-mnepali" placeholder="e.g. जेठ २०८३">
+          </div>
+        </div>
+        <button class="btn-g btn-fw" onclick="importSheets()" style="margin-top:4px">⬇️ Import from Google Sheets</button>
+        <div id="gs-stat-obs" class="gs-status"></div>
+        <div id="gs-stat-fore" class="gs-status"></div>
+        <div class="divider"></div>
+        <p style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px">Expected sheet format</p>
+        <div class="gs-hint">
+          Row with <code>DAY</code> header auto-detected.<br>
+          Columns: <code>DAY</code> | <code>Date(गते)</code> | <code>ISO Date</code> | <code>Name1</code> | <code>Name2</code>…<br>
+          Shift codes: <code>MO</code> <code>MO*</code> <code>AON*</code> <code>A1</code> <code>A2</code> <code>MF</code> <code>AFN*</code> <code>xx</code>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMINS TAB (master only) -->
+    <div class="a-pane" id="ap-admins">
+      <div class="a-sec">
+        <h2>🔑 Change Master PIN</h2>
+        <div class="f-row">
+          <label class="f-lbl">New master PIN (4–6 digits)</label>
+          <input type="password" class="f-inp" id="master-pin-inp" placeholder="New PIN" maxlength="6">
+        </div>
+        <button class="btn-g" onclick="saveMasterPin()">Save Master PIN</button>
+      </div>
+      <div class="a-sec">
+        <h2>👤 Sub-Admins</h2>
+        <div id="sub-admin-list"></div>
+        <div class="divider"></div>
+        <p style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:9px">Add new sub-admin</p>
+        <div class="g2">
+          <div class="f-row">
+            <label class="f-lbl">Username</label>
+            <input class="f-inp" id="sa-name" placeholder="e.g. Supervisor A">
+          </div>
+          <div class="f-row">
+            <label class="f-lbl">PIN (4–6 digits)</label>
+            <input type="password" class="f-inp" id="sa-pin" placeholder="PIN" maxlength="6">
+          </div>
+        </div>
+        <div class="f-row">
+          <label class="f-lbl">Permissions</label>
+          <select class="f-inp" id="sa-perm">
+            <option value="all">All rosters (Observer + Forecaster)</option>
+            <option value="obs">Observer only</option>
+            <option value="fore">Forecaster only</option>
+          </select>
+        </div>
+        <button class="btn-g" onclick="addSubAdmin()">Add Sub-Admin</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ EDIT MODAL ═══════════ -->
+<div class="modal-wrap" id="edit-modal" style="display:none" onclick="bgClose(event)">
+  <div class="modal-sheet">
+    <div class="modal-title" id="modal-title">Edit Duties</div>
+    <div class="modal-sub" id="modal-sub"></div>
+    <div id="modal-rows"></div>
+    <div class="modal-acts">
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-save" onclick="saveModal()">✓ Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ DRIVE CONNECT MODAL ═══════════ -->
+<div class="drive-modal" id="drive-modal" style="display:none">
+  <div class="drive-modal-box">
+    <div class="dm-title">☁️ Connect Google Drive</div>
+    <div class="dm-body">
+      To connect Google Drive, you need to set up a Google OAuth Client ID.<br><br>
+      <strong>Quick setup:</strong><br>
+      1. Go to <a href="https://console.cloud.google.com" target="_blank" style="color:var(--accent)">Google Cloud Console</a><br>
+      2. Create OAuth 2.0 credentials (Web app)<br>
+      3. Enable Google Drive API<br>
+      4. Add this page's URL to authorized origins<br><br>
+      Enter your Client ID below to connect:
+    </div>
+    <div class="f-row">
+      <label class="f-lbl">Google OAuth Client ID</label>
+      <input class="f-inp" id="gd-client-id" placeholder="…apps.googleusercontent.com">
+    </div>
+    <div class="dm-acts">
+      <button style="background:var(--bg3);color:var(--text2)" onclick="closeDriveModal()">Cancel</button>
+      <button style="background:var(--accent);color:#0c1a27" onclick="initGoogleDrive()">Connect</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STORAGE ────────────────────────────────────────────────────────────────
+const K={R:'mfd_r5',S:'mfd_s5',A:'mfd_a5',MP:'mfd_mp5',GS:'mfd_gs5',GD:'mfd_gd5',UF:'mfd_uf5'};
+const gs4=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch{return d}};
+const ss4=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
+const getRoster=()=>gs4(K.R,{obs:[],fore:[]});
+const saveRoster=r=>ss4(K.R,r);
+const getStaff=()=>gs4(K.S,{obs:['Biju','Jeni','Jyoti','Menka','Munesh','Pratima','Rasmi'],fore:[]});
+const saveStaff=s=>ss4(K.S,s);
+const getAdmins=()=>gs4(K.A,[]);
+const saveAdmins=a=>ss4(K.A,a);
+const getMPin=()=>gs4(K.MP,'1234');
+const getGS=()=>gs4(K.GS,{});
+const saveGS=c=>ss4(K.GS,c);
+const getGDConfig=()=>gs4(K.GD,{clientId:'',connected:false});
+const saveGDConfig=c=>ss4(K.GD,c);
+// Upload file log (archive of imported files metadata)
+const getUploadLog=()=>gs4(K.UF,[]);
+const saveUploadLog=l=>ss4(K.UF,l);
+
+// ─── CONSTANTS ───────────────────────────────────────────────────────────────
+const WEEKDAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const OBS_SH=['xx','MO','MO*','AON*','A1','A2'];
+const FORE_SH=['xx','MF','MF*','AFN*','AF','A1','A2','SM1','SA2'];
+const ALL_SH=[...new Set([...OBS_SH,...FORE_SH])];
+
+// Nepali month name → English map
+const NEPALI_MONTH_MAP={
+  'baisakh':'Baisakh','baishakh':'Baisakh','vaisakh':'Baisakh',
+  'jestha':'Jestha','jyestha':'Jestha','jettha':'Jestha',
+  'ashadh':'Ashadh','ashad':'Ashadh','ashar':'Ashadh',
+  'shrawan':'Shrawan','sawan':'Shrawan','shravan':'Shrawan',
+  'bhadra':'Bhadra','bhado':'Bhadra','bhadon':'Bhadra',
+  'ashwin':'Ashwin','aswin':'Ashwin','asoj':'Ashwin',
+  'kartik':'Kartik','kartick':'Kartik',
+  'mangsir':'Mangsir','margshirsha':'Mangsir',
+  'poush':'Poush','push':'Poush','paush':'Poush',
+  'magh':'Magh',
+  'falgun':'Falgun','phalgun':'Falgun',
+  'chaitra':'Chaitra','chait':'Chaitra'
+};
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let CU='',CT='obs',IA=false,IM=false,CAO=null;
+let MOD={type:'',mid:'',di:-1};
+let NMC=0;
+let XLSX_WB=null,XLSX_SEL_SHEET='';
+let GD_TOKEN=null,GD_FOLDER_ID=null;
+
+const todayISO=()=>new Date().toISOString().split('T')[0];
+const initials=n=>(n||'?').slice(0,2).toUpperCase();
+
+// ─── SHIFT HELPERS ────────────────────────────────────────────────────────────
+const SC=s=>{
+  if(!s||s==='xx')return 's-OFF';
+  if(s==='MO')return 's-MO';if(s==='MO*')return 's-MOS';
+  if(s==='AON*')return 's-AON';if(s==='A1')return 's-A1';if(s==='A2')return 's-A2';
+  return 's-OTH';
+};
+const SL=s=>{
+  const m={MO:'Morning','MO*':'Morning*','AON*':'Night duty',A1:'Afternoon',A2:'Late',
+    MF:'Morning Fcst','MF*':'Morning Fcst*','AFN*':'Night Fcst',AF:'Aft. Fcst',
+    SM1:'Day SDM1',SA2:'Day SDA2',xx:'Day off'};
+  return m[s]||s||'Day off';
+};
+const SCL=s=>{
+  const m={MO:'#4ade80','MO*':'#86efac','AON*':'#a78bfa',A1:'#38bdf8',A2:'#fbbf24',
+    MF:'#34d399','MF*':'#6ee7b7','AFN*':'#c084fc',AF:'#60a5fa',
+    SM1:'#fb923c',SA2:'#fde68a',xx:'#64748b'};
+  return m[s]||'#64748b';
+};
+
+// ─── SEED DATA ───────────────────────────────────────────────────────────────
+const SEED={obs:[{
+  id:'obs-jestha-2083',name:'Jestha 2083',nepali:'जेठ २०८३',type:'obs',startDate:'2026-05-15',
+  days:[
+    {date:1,isoDate:'2026-05-15',day:'Fri',duties:{Biju:'xx',Jeni:'MO*',Jyoti:'A1',Menka:'MO',Munesh:'AON*',Pratima:'AON*',Rasmi:'MO*'}},
+    {date:2,isoDate:'2026-05-16',day:'Sat',duties:{Biju:'MO',Jeni:'xx',Jyoti:'AON*',Menka:'AON*',Munesh:'MO*',Pratima:'MO*',Rasmi:'xx'}},
+    {date:3,isoDate:'2026-05-17',day:'Sun',duties:{Biju:'AON*',Jeni:'MO',Jyoti:'MO*',Menka:'MO*',Munesh:'xx',Pratima:'xx',Rasmi:'AON*'}},
+    {date:4,isoDate:'2026-05-18',day:'Mon',duties:{Biju:'MO*',Jeni:'AON*',Jyoti:'xx',Menka:'xx',Munesh:'MO',Pratima:'AON*',Rasmi:'MO*'}},
+    {date:5,isoDate:'2026-05-19',day:'Tue',duties:{Biju:'A1',Jeni:'MO*',Jyoti:'MO',Menka:'AON*',Munesh:'AON*',Pratima:'MO*',Rasmi:'A1'}},
+    {date:6,isoDate:'2026-05-20',day:'Wed',duties:{Biju:'MO',Jeni:'A1',Jyoti:'AON*',Menka:'MO*',Munesh:'MO*',Pratima:'A1',Rasmi:'AON*'}},
+    {date:7,isoDate:'2026-05-21',day:'Thu',duties:{Biju:'AON*',Jeni:'MO',Jyoti:'MO*',Menka:'A1',Munesh:'xx',Pratima:'AON*',Rasmi:'MO*'}},
+    {date:8,isoDate:'2026-05-22',day:'Fri',duties:{Biju:'MO*',Jeni:'AON*',Jyoti:'A1',Menka:'AON*',Munesh:'MO',Pratima:'MO*',Rasmi:'xx'}},
+    {date:9,isoDate:'2026-05-23',day:'Sat',duties:{Biju:'xx',Jeni:'MO*',Jyoti:'MO',Menka:'MO*',Munesh:'AON*',Pratima:'xx',Rasmi:'AON*'}},
+    {date:10,isoDate:'2026-05-24',day:'Sun',duties:{Biju:'AON*',Jeni:'xx',Jyoti:'AON*',Menka:'xx',Munesh:'MO*',Pratima:'MO',Rasmi:'MO*'}},
+    {date:11,isoDate:'2026-05-25',day:'Mon',duties:{Biju:'MO*',Jeni:'AON*',Jyoti:'MO*',Menka:'A1',Munesh:'xx',Pratima:'AON*',Rasmi:'MO'}},
+    {date:12,isoDate:'2026-05-26',day:'Tue',duties:{Biju:'MO',Jeni:'MO*',Jyoti:'xx',Menka:'AON*',Munesh:'AON*',Pratima:'MO*',Rasmi:'A1'}},
+    {date:13,isoDate:'2026-05-27',day:'Wed',duties:{Biju:'AON*',Jeni:'A1',Jyoti:'MO',Menka:'MO*',Munesh:'MO*',Pratima:'xx',Rasmi:'AON*'}},
+    {date:14,isoDate:'2026-05-28',day:'Thu',duties:{Biju:'MO*',Jeni:'MO',Jyoti:'AON*',Menka:'xx',Munesh:'A1',Pratima:'AON*',Rasmi:'MO*'}},
+    {date:15,isoDate:'2026-05-29',day:'Fri',duties:{Biju:'xx',Jeni:'AON*',Jyoti:'MO*',Menka:'AON*',Munesh:'MO',Pratima:'MO*',Rasmi:'xx'}},
+  ]
+}],fore:[]};
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded',()=>{
+  if(!gs4(K.R,null))saveRoster(SEED);
+  selectType('obs');
+  setupDriveDropZone();
+});
+
+// ─── SCREENS ─────────────────────────────────────────────────────────────────
+const showScreen=id=>{
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+};
+
+// ─── LOGIN ────────────────────────────────────────────────────────────────────
+let _type='obs';
+function selectType(t){
+  _type=t;
+  document.getElementById('type-obs').classList.toggle('sel',t==='obs');
+  document.getElementById('type-fore').classList.toggle('sel',t==='fore');
+  populateNameDrop();
+}
+function populateNameDrop(){
+  const sel=document.getElementById('login-name');
+  const staff=getStaff()[_type]||[];
+  sel.innerHTML='<option value="">-- Select your name --</option>';
+  staff.forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;sel.appendChild(o);});
+}
+function doLogin(){
+  const name=document.getElementById('login-name').value;
+  if(!name){toast('Please select your name','err');return;}
+  CU=name;CT=_type;IA=false;IM=false;
+  showApp();
+}
+function openAdminLogin(){
+  const pin=prompt('Enter admin PIN:');
+  if(!pin)return;
+  if(pin===getMPin()){IM=true;IA=true;CAO=null;showAdmin('Master Admin');return;}
+  const found=getAdmins().find(a=>a.pin===pin);
+  if(found){IA=true;IM=false;CAO=found;showAdmin(found.name);return;}
+  toast('Incorrect PIN','err');
+}
+function doLogout(){showScreen('s-login');}
+function backToLogin(){showScreen('s-login');}
+
+// ─── APP ──────────────────────────────────────────────────────────────────────
+function showApp(){
+  showScreen('s-app');
+  document.getElementById('app-username').textContent=CU;
+  const b=document.getElementById('app-type-badge');
+  b.textContent=CT==='obs'?'Observer':'Forecaster';
+  b.className='type-badge '+(CT==='obs'?'badge-obs':'badge-fore');
+  fillMonthSelects();renderMine();renderCal();renderToday();renderArchive();
+  checkTodayDuty();requestNotifPerm();
+}
+function showTab(t){
+  ['mine','cal','today','archive'].forEach(n=>{
+    document.getElementById('tb-'+n).classList.toggle('active',n===t);
+    document.getElementById('pane-'+n).classList.toggle('active',n===t);
+  });
+  if(t==='cal')renderCal();
+  if(t==='today')renderToday();
+  if(t==='archive')renderArchive();
+}
+
+// ─── MONTH SELECTS ────────────────────────────────────────────────────────────
+function getTypeMonths(t){return (getRoster()[t]||[]);}
+
+// Returns the "latest" month by startDate
+function getLatestMonth(t){
+  const months=getTypeMonths(t);
+  if(!months.length)return null;
+  return months.slice().sort((a,b)=>{
+    const da=a.startDate||'';const db=b.startDate||'';
+    return da<db?1:-1;
+  })[0];
+}
+
+function fillMonthSelects(){
+  ['mine','cal'].forEach(id=>{
+    const sel=document.getElementById('sel-'+id);
+    const prev=sel.value;
+    sel.innerHTML='';
+    getTypeMonths(CT).forEach(m=>{
+      const o=document.createElement('option');o.value=m.id;
+      o.textContent=m.name+(m.nepali?' · '+m.nepali:'');sel.appendChild(o);
+    });
+    // Auto-select latest month
+    const latest=getLatestMonth(CT);
+    if(latest){sel.value=latest.id;}
+    else if(prev)sel.value=prev;
+  });
+}
+function getSelM(selId){
+  const v=document.getElementById(selId).value;
+  return getTypeMonths(CT).find(m=>m.id===v)||getLatestMonth(CT)||getTypeMonths(CT)[0];
+}
+
+// ─── MY DUTIES ────────────────────────────────────────────────────────────────
+function renderMine(){
+  const m=getSelM('sel-mine');
+  if(!m){document.getElementById('mine-list').innerHTML='<p style="color:var(--text3);font-size:13px;text-align:center;padding:1.5rem">No roster data yet.</p>';return;}
+  document.getElementById('meta-mine').textContent=m.nepali||'';
+  const today=todayISO(),counts={n:0,mo:0,af:0,off:0};
+  let html='',wk=[],wi=0;
+  m.days.forEach((d,i)=>{
+    const s=(d.duties||{})[CU]||'xx';wk.push({...d,s});
+    if(wk.length===7||i===m.days.length-1){
+      html+=`<div class="week-block"><div class="wk-lbl">Week ${++wi}</div>`;
+      wk.forEach(wd=>{
+        const it=wd.isoDate===today;
+        if(!wd.s||wd.s==='xx')counts.off++;
+        else if(wd.s==='AON*'||wd.s==='AFN*')counts.n++;
+        else if(['MO','MO*','MF','MF*'].includes(wd.s))counts.mo++;
+        else counts.af++;
+        html+=`<div class="day-row${it?' today':''}">
+          <div class="dr-left"><span class="dr-dn">${wd.day}</span><span class="dr-date">${(wd.isoDate||'').slice(5).replace('-','/')}</span><span class="dr-gate">${wd.date} गते</span></div>
+          <span class="sh ${SC(wd.s)}">${SL(wd.s)}</span>
+          ${it?'<span class="today-chip">Today</span>':''}
+        </div>`;
+      });
+      html+='</div>';wk=[];
+    }
+  });
+  document.getElementById('mine-list').innerHTML=html;
+  document.getElementById('mine-sum').innerHTML=`
+    <div class="sum-card"><div class="sum-num" style="color:var(--purple)">${counts.n}</div><div class="sum-lbl">Night shifts</div></div>
+    <div class="sum-card"><div class="sum-num" style="color:var(--green)">${counts.mo}</div><div class="sum-lbl">Morning shifts</div></div>
+    <div class="sum-card"><div class="sum-num" style="color:var(--accent)">${counts.af}</div><div class="sum-lbl">Afternoon shifts</div></div>
+    <div class="sum-card"><div class="sum-num" style="color:var(--text3)">${counts.off}</div><div class="sum-lbl">Days off</div></div>`;
+}
+
+// ─── CALENDAR ────────────────────────────────────────────────────────────────
+function renderCal(){
+  const m=getSelM('sel-cal');
+  if(!m){document.getElementById('cal-body').innerHTML='';return;}
+  document.getElementById('meta-cal').textContent=m.nepali||'';
+  const today=todayISO(),staff=getStaff()[CT]||[];
+  const fdow=new Date(m.startDate+'T00:00:00').getDay();
+  let html='';
+  for(let i=0;i<fdow;i++)html+='<div class="cal-cell empty"></div>';
+  m.days.forEach(d=>{
+    const it=d.isoDate===today;
+    const active=staff.map(n=>({n,s:(d.duties||{})[n]})).filter(x=>x.s&&x.s!=='xx');
+    html+=`<div class="cal-cell${it?' today':''}">
+      <div class="cal-dn">${d.date}</div>
+      ${active.slice(0,3).map(x=>`<div class="cal-pip" style="background:${SCL(x.s)}22;color:${SCL(x.s)}">${x.n.slice(0,4)}</div>`).join('')}
+      ${active.length>3?`<div style="font-size:8px;color:var(--text3)">+${active.length-3}</div>`:''}
+    </div>`;
+  });
+  document.getElementById('cal-body').innerHTML=html;
+}
+
+// ─── TODAY ────────────────────────────────────────────────────────────────────
+function renderToday(){
+  const today=todayISO(),roster=getRoster();
+  let fd=null,fm=null;
+  (roster[CT]||[]).forEach(m=>{const d=m.days.find(d=>d.isoDate===today);if(d){fd=d;fm=m;}});
+  const el=document.getElementById('today-content');
+  if(!fd){el.innerHTML=`<p style="color:var(--text3);font-size:13px;text-align:center;padding:2rem">No roster for today (${today}).<br>Ask admin to add ${CT==='obs'?'Observer':'Forecaster'} roster.</p>`;return;}
+  const staff=getStaff()[CT]||[];
+  const duties=fd.duties||{};
+  const onDuty=staff.map(n=>({n,s:duties[n]})).filter(x=>x.s&&x.s!=='xx');
+  const off=staff.map(n=>({n,s:duties[n]})).filter(x=>!x.s||x.s==='xx');
+  el.innerHTML=`
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:11px 13px;margin-bottom:12px">
+      <div style="font-size:10px;color:var(--text3)">${fm.name}${fm.nepali?' · '+fm.nepali:''}</div>
+      <div style="font-size:15px;font-weight:700">${fd.day}, ${today} <span style="font-size:11px;color:var(--text3)">· ${fd.date} गते</span></div>
+    </div>
+    <div class="sec-lbl">On duty today</div>
+    ${onDuty.map(x=>`<div class="duty-row"><div class="dr-person"><div class="avatar">${initials(x.n)}</div><span class="person-n">${x.n}</span></div><span class="sh ${SC(x.s)}">${SL(x.s)}</span></div>`).join('')||'<p style="color:var(--text3);font-size:13px">No staff scheduled.</p>'}
+    ${off.length?`<div class="sec-lbl" style="margin-top:14px">Day off</div><div class="off-chips">${off.map(x=>`<span class="off-chip">${x.n}</span>`).join('')}</div>`:''}`;
+}
+
+// ─── ARCHIVE ──────────────────────────────────────────────────────────────────
+let archiveViewOpen=null;
+function renderArchive(){
+  const roster=getRoster();
+  const latest=getLatestMonth(CT);
+  const months=[...(roster[CT]||[])].sort((a,b)=>(a.startDate||'')<(b.startDate||'')?1:-1);
+  const el=document.getElementById('archive-content');
+  if(!months.length){
+    el.innerHTML='<p style="color:var(--text3);font-size:13px;text-align:center;padding:2rem">No roster data in archive.</p>';
+    return;
+  }
+  let html=`<p style="font-size:12px;color:var(--text3);margin-bottom:12px">All ${CT==='obs'?'Observer':'Forecaster'} rosters. Tap a month to view details.</p>`;
+  html+='<div class="archive-view" id="archive-detail-view"><div class="av-header"><div class="av-title" id="archive-detail-title"></div><button class="av-close" onclick="closeArchiveView()">✕</button></div><div id="archive-detail-body"></div></div>';
+  html+='<div class="archive-grid">';
+  months.forEach(m=>{
+    const isLatest=latest&&m.id===latest.id;
+    html+=`<div class="archive-card${isLatest?' active-month':''}" onclick="viewArchiveMonth('${m.id}')">
+      <div class="ac-badge ${CT==='obs'?'ac-obs':'ac-fore'}">${CT==='obs'?'OBS':'FORE'}</div>
+      <div class="ac-month">${m.name}</div>
+      <div class="ac-nepali">${m.nepali||''}</div>
+      <div class="ac-days">${m.days.length} days${isLatest?' · <strong style="color:var(--green)">Latest</strong>':''}</div>
+    </div>`;
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+function viewArchiveMonth(mid){
+  const m=getTypeMonths(CT).find(x=>x.id===mid);
+  if(!m)return;
+  const staff=getStaff()[CT]||[];
+  const today=todayISO();
+  archiveViewOpen=mid;
+  document.getElementById('archive-detail-title').textContent=m.name+(m.nepali?' · '+m.nepali:'');
+  let html=`<div style="font-size:11px;color:var(--text3);margin-bottom:10px">${m.days.length} days · starts ${m.startDate}</div>`;
+  // Summary stats
+  const counts={};
+  staff.forEach(n=>{counts[n]={mo:0,n:0,af:0,off:0};});
+  m.days.forEach(d=>{
+    staff.forEach(n=>{
+      const s=(d.duties||{})[n]||'xx';
+      if(!counts[n])counts[n]={mo:0,n:0,af:0,off:0};
+      if(s==='xx')counts[n].off++;
+      else if(s==='AON*'||s==='AFN*')counts[n].n++;
+      else if(['MO','MO*','MF','MF*'].includes(s))counts[n].mo++;
+      else counts[n].af++;
+    });
+  });
+  html+=`<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">Staff Summary</div>
+  <div style="overflow-x:auto;margin-bottom:12px">
+  <table style="width:100%;font-size:11px;border-collapse:collapse">
+    <tr><th style="text-align:left;padding:4px 6px;color:var(--text3)">Name</th><th style="padding:4px 6px;color:var(--green)">Morning</th><th style="padding:4px 6px;color:var(--purple)">Night</th><th style="padding:4px 6px;color:var(--accent)">Afternoon</th><th style="padding:4px 6px;color:var(--text3)">Off</th></tr>
+    ${staff.map(n=>`<tr style="border-top:1px solid var(--border)"><td style="padding:5px 6px;font-weight:600">${n}</td><td style="text-align:center;padding:5px 6px;color:var(--green)">${(counts[n]||{}).mo||0}</td><td style="text-align:center;padding:5px 6px;color:var(--purple)">${(counts[n]||{}).n||0}</td><td style="text-align:center;padding:5px 6px;color:var(--accent)">${(counts[n]||{}).af||0}</td><td style="text-align:center;padding:5px 6px;color:var(--text3)">${(counts[n]||{}).off||0}</td></tr>`).join('')}
+  </table></div>`;
+  html+=`<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">Day-by-day</div>`;
+  m.days.slice(0,10).forEach(d=>{
+    const it=d.isoDate===today;
+    const pills=staff.map(n=>`<span class="sh ${SC((d.duties||{})[n]||'xx')}" style="font-size:9px;padding:2px 5px">${n.slice(0,4)}:${(d.duties||{})[n]||'xx'}</span>`).join(' ');
+    html+=`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)${it?';background:var(--abg)':''}">
+      <div style="min-width:56px;font-size:11px;font-weight:700${it?';color:var(--accent)':''}">${d.date} गते <span style="font-weight:400;color:var(--text3)">${d.day}</span></div>
+      <div style="flex:1;display:flex;flex-wrap:wrap;gap:3px">${pills}</div>
+    </div>`;
+  });
+  if(m.days.length>10){
+    html+=`<div style="font-size:11px;color:var(--text3);text-align:center;padding:8px">… and ${m.days.length-10} more days</div>`;
+  }
+  document.getElementById('archive-detail-body').innerHTML=html;
+  document.getElementById('archive-detail-view').classList.add('visible');
+  document.getElementById('archive-detail-view').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function closeArchiveView(){
+  document.getElementById('archive-detail-view').classList.remove('visible');
+  archiveViewOpen=null;
+}
+
+// ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
+function requestNotifPerm(){
+  if(!('Notification' in window))return;
+  if(Notification.permission==='default')Notification.requestPermission().then(p=>{if(p==='granted')checkTodayDuty(true);});
+  else if(Notification.permission==='granted')checkTodayDuty(true);
+}
+function checkTodayDuty(notif=false){
+  const today=todayISO(),roster=getRoster();
+  let shift=null;
+  (roster[CT]||[]).forEach(m=>{const d=m.days.find(d=>d.isoDate===today);if(d)shift=(d.duties||{})[CU]||null;});
+  const banner=document.getElementById('notif-banner');
+  const t=document.getElementById('nb-title'),b=document.getElementById('nb-body');
+  if(shift&&shift!=='xx'){
+    banner.className='notif-banner nb-duty';banner.style.display='block';
+    t.textContent='📋 You are on duty today!';t.style.color='var(--accent)';
+    b.innerHTML=`Shift: <strong style="color:var(--accent)">${SL(shift)}</strong>`;
+    if(notif&&Notification.permission==='granted'){try{new Notification('MFD – On duty today!',{body:`${CU}: ${SL(shift)} on ${today}`});}catch{}}
+  }else if(shift==='xx'){
+    banner.className='notif-banner nb-off';banner.style.display='block';
+    t.textContent='✅ Day off today';t.style.color='var(--green)';
+    b.textContent='You are not scheduled for duty today. Enjoy!';
+  }
+}
+
+// ─── ADMIN SCREEN ─────────────────────────────────────────────────────────────
+function showAdmin(name){
+  showScreen('s-admin');
+  document.getElementById('admin-name-label').textContent=name;
+  document.getElementById('masters-tab').style.display=IM?'':'none';
+  renderStaffLists();renderExistingMonths();populateEdMonths();renderEditList();
+  if(IM)renderSubAdmins();
+  refreshDriveUI();
+  renderDriveArchive();
+  showAdminTab(document.querySelector('.a-tab'),'staff');
+}
+function showAdminTab(btn,name){
+  document.querySelectorAll('.a-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.a-pane').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('ap-'+name).classList.add('active');
+  if(name==='edit'){populateEdMonths();renderEditList();}
+  if(name==='drive'){refreshDriveUI();renderDriveArchive();}
+}
+
+// ─── STAFF MANAGEMENT ─────────────────────────────────────────────────────────
+function renderStaffLists(){
+  ['obs','fore'].forEach(t=>{
+    const staff=getStaff()[t]||[];
+    const canEdit=IM||(CAO&&(CAO.perm==='all'||CAO.perm===t));
+    document.getElementById(t+'-staff-list').innerHTML=staff.length
+      ?staff.map((n,i)=>`<div class="list-row">
+          <div><div class="list-main">${n}</div></div>
+          <div class="list-actions">
+            <button class="btn-a btn-sm" onclick="renameStaff('${t}',${i})">Rename</button>
+            ${canEdit?`<button class="btn-d btn-sm" onclick="removeStaff('${t}',${i})">Remove</button>`:''}
+          </div>
+        </div>`).join('')
+      :'<p style="font-size:12px;color:var(--text3)">No staff yet.</p>';
+  });
+}
+function addStaff(t){
+  const inp=document.getElementById(t+'-inp');
+  const name=inp.value.trim();if(!name)return;
+  const s=getStaff();s[t]=s[t]||[];
+  if(s[t].includes(name)){toast('Name already exists','err');return;}
+  s[t].push(name);saveStaff(s);inp.value='';
+  renderStaffLists();populateNameDrop();toast('Staff added: '+name);
+}
+function removeStaff(t,i){
+  const s=getStaff();
+  if(!confirm('Remove "'+s[t][i]+'"?'))return;
+  s[t].splice(i,1);saveStaff(s);renderStaffLists();populateNameDrop();toast('Removed');
+}
+function renameStaff(t,i){
+  const s=getStaff();const old=s[t][i];
+  const nw=prompt('Rename "'+old+'" to:',old);
+  if(!nw||nw.trim()===old)return;
+  const r=getRoster();
+  (r[t]||[]).forEach(m=>m.days.forEach(d=>{if(d.duties&&d.duties[old]!==undefined){d.duties[nw.trim()]=d.duties[old];delete d.duties[old];}}));
+  s[t][i]=nw.trim();saveStaff(s);saveRoster(r);
+  renderStaffLists();populateNameDrop();toast('Renamed to '+nw.trim());
+}
+
+// ─── ADD NEW MONTH ─────────────────────────────────────────────────────────────
+function clearNMDays(){document.getElementById('nm-days-list').innerHTML='';NMC=0;}
+function refreshDayHeaders(){
+  document.querySelectorAll('[data-nmday]').forEach(bl=>{
+    const idx=parseInt(bl.dataset.nmday);
+    const start=document.getElementById('nm-start').value;
+    if(!start)return;
+    const dt=new Date(start+'T00:00:00');dt.setDate(dt.getDate()+(idx-1));
+    const iso=dt.toISOString().split('T')[0];
+    const dn=WEEKDAYS[dt.getDay()];
+    const isoInp=document.getElementById('nmd-iso-'+idx);
+    const dnInp=document.getElementById('nmd-dn-'+idx);
+    if(isoInp&&!isoInp.value)isoInp.value=iso;
+    if(dnInp)dnInp.textContent=dn;
+    bl.querySelector('.day-block-num').textContent=`Day ${idx} — ${dn} ${iso.slice(5).replace('-','/')}`;
+  });
+}
+function shiftOpts(type,cur){
+  const shifts=type==='fore'?FORE_SH:OBS_SH;
+  return shifts.map(s=>`<option value="${s}"${s===cur?' selected':''}>${s==='xx'?'xx — Day off':s+' — '+SL(s)}</option>`).join('');
+}
+function addNMDay(){
+  NMC++;const idx=NMC;
+  const type=document.getElementById('nm-type').value||'obs';
+  const staff=getStaff()[type]||[];
+  const start=document.getElementById('nm-start').value;
+  let autoISO='',autoDN='';
+  if(start){const dt=new Date(start+'T00:00:00');dt.setDate(dt.getDate()+(idx-1));autoISO=dt.toISOString().split('T')[0];autoDN=WEEKDAYS[dt.getDay()];}
+  const el=document.createElement('div');
+  el.className='day-block';el.id='nm-day-'+idx;el.dataset.nmday=idx;
+  el.innerHTML=`<div class="day-block-hd">
+    <span class="day-block-num">Day ${idx}${autoDN?' — '+autoDN+' '+(autoISO.slice(5).replace('-','/')):''}</span>
+    <button class="rm-btn" onclick="rmNMDay(${idx})">✕</button>
+  </div>
+  <div class="g3" style="margin-bottom:8px">
+    <div><label class="f-lbl">गते</label><input type="number" class="f-inp" id="nmd-num-${idx}" value="${idx}" min="1" max="32"></div>
+    <div><label class="f-lbl">Date</label><input type="date" class="f-inp" id="nmd-iso-${idx}" value="${autoISO}" onchange="updDayName(${idx})"></div>
+    <div><label class="f-lbl">Day</label><span id="nmd-dn-${idx}" style="font-size:13px;font-weight:700;color:var(--text);display:block;padding:9px 0">${autoDN}</span></div>
+  </div>
+  ${staff.map(n=>`<div class="sh-row"><span class="sh-row-name">${n}</span><select class="sh-sel" id="nmd-sh-${idx}-${n}">${shiftOpts(type,'xx')}</select></div>`).join('')}`;
+  document.getElementById('nm-days-list').appendChild(el);
+}
+function updDayName(idx){
+  const v=document.getElementById('nmd-iso-'+idx)?.value;
+  if(!v)return;
+  const dn=WEEKDAYS[new Date(v+'T00:00:00').getDay()];
+  document.getElementById('nmd-dn-'+idx).textContent=dn;
+  document.getElementById('nm-day-'+idx).querySelector('.day-block-num').textContent=`Day ${idx} — ${dn} ${v.slice(5).replace('-','/')}`;
+}
+function rmNMDay(idx){const el=document.getElementById('nm-day-'+idx);if(el)el.remove();}
+function saveNewMonth(){
+  const name=document.getElementById('nm-name').value.trim();
+  const nepali=document.getElementById('nm-nepali').value.trim();
+  const start=document.getElementById('nm-start').value;
+  const type=document.getElementById('nm-type').value||'obs';
+  if(!name||!start){toast('Fill month name & start date','err');return;}
+  const staff=getStaff()[type]||[];
+  const days=[];
+  document.querySelectorAll('.day-block').forEach(bl=>{
+    const idx=bl.dataset.nmday;
+    const dateNum=parseInt(document.getElementById('nmd-num-'+idx)?.value||idx);
+    const iso=document.getElementById('nmd-iso-'+idx)?.value||'';
+    const dn=document.getElementById('nmd-dn-'+idx)?.textContent||'';
+    const duties={};
+    staff.forEach(n=>{const sel=document.getElementById('nmd-sh-'+idx+'-'+n);duties[n]=sel?sel.value:'xx';});
+    days.push({date:dateNum,isoDate:iso,day:dn,duties});
+  });
+  const id=type+'-'+name.toLowerCase().replace(/\s+/g,'-');
+  const r=getRoster();r[type]=r[type]||[];
+  const ei=r[type].findIndex(m=>m.id===id);
+  const mo={id,name,nepali,type,startDate:start,days};
+  if(ei>=0){if(!confirm('A month with this name exists. Overwrite?'))return;r[type][ei]=mo;}
+  else r[type].push(mo);
+  saveRoster(r);renderExistingMonths();fillMonthSelects();populateEdMonths();
+  toast('Month saved: '+name);
+  document.getElementById('nm-name').value='';document.getElementById('nm-nepali').value='';
+  document.getElementById('nm-start').value='';clearNMDays();
+}
+function renderExistingMonths(){
+  const r=getRoster();
+  const all=[...(r.obs||[]).map(m=>({...m,tl:'Observer'})),...(r.fore||[]).map(m=>({...m,tl:'Forecaster'}))];
+  const latest={obs:getLatestMonth('obs'),fore:getLatestMonth('fore')};
+  document.getElementById('existing-months').innerHTML=all.length
+    ?all.map(m=>{
+      const isLatest=latest[m.type]&&m.id===latest[m.type].id;
+      return `<div class="list-row">
+        <div>
+          <div class="list-main">${m.name} <span class="pill ${m.type==='obs'?'pill-obs':'pill-fore'}">${m.tl}</span>${isLatest?'<span class="pill" style="background:var(--gbg);color:var(--green);border:1px solid var(--green)">Latest</span>':''}</div>
+          <div class="list-sub">${m.nepali||''} · ${m.days.length} days · starts ${m.startDate}</div>
+        </div>
+        <button class="btn-d btn-sm" onclick="deleteMonth('${m.type}','${m.id}')">Delete</button>
+      </div>`;}).join('')
+    :'<p style="font-size:12px;color:var(--text3)">No months added yet.</p>';
+}
+function deleteMonth(type,id){
+  if(!confirm('Delete this month?'))return;
+  const r=getRoster();r[type]=(r[type]||[]).filter(m=>m.id!==id);
+  saveRoster(r);renderExistingMonths();fillMonthSelects();populateEdMonths();toast('Deleted');
+}
+
+// ─── EDIT DUTIES (ADMIN ONLY) ─────────────────────────────────────────────────
+function populateEdMonths(){
+  const type=document.getElementById('ed-type')?.value||'obs';
+  const sel=document.getElementById('ed-month');
+  sel.innerHTML='<option value="">-- Select month --</option>';
+  getTypeMonths(type).forEach(m=>{const o=document.createElement('option');o.value=m.id;o.textContent=m.name;sel.appendChild(o);});
+}
+function renderEditList(){
+  if(!IA){document.getElementById('ed-day-list').innerHTML='<p style="color:var(--red);font-size:13px">Admin access required to edit duties.</p>';return;}
+  const type=document.getElementById('ed-type')?.value||'obs';
+  const mid=document.getElementById('ed-month')?.value;
+  const r=getRoster();
+  const month=(r[type]||[]).find(m=>m.id===mid);
+  if(!month){document.getElementById('ed-day-list').innerHTML='';return;}
+  const staff=getStaff()[type]||[];
+  let html='';
+  month.days.forEach((d,di)=>{
+    const duties=d.duties||{};
+    const pills=staff.map(n=>`<span class="sh ${SC(duties[n]||'xx')}" style="font-size:9px;padding:2px 5px">${n.slice(0,4)}:${duties[n]||'xx'}</span>`).join('');
+    html+=`<div class="ed-day-row">
+      <div class="ed-day-left"><div class="ed-day-date">${d.date} गते</div><div class="ed-day-name">${d.day} ${(d.isoDate||'').slice(5).replace('-','/')}</div></div>
+      <div class="ed-shifts">${pills}</div>
+      <button class="ed-edit-btn" onclick="openModal('${type}','${mid}',${di})" title="Edit this day">
+        <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+    </div>`;
+  });
+  document.getElementById('ed-day-list').innerHTML=html||'<p style="font-size:12px;color:var(--text3)">No days.</p>';
+}
+
+// ─── EDIT MODAL (ADMIN ONLY) ───────────────────────────────────────────────────
+function openModal(type,mid,di){
+  if(!IA){toast('Admin access required','err');return;}
+  const r=getRoster();
+  const month=(r[type]||[]).find(m=>m.id===mid);
+  if(!month)return;
+  const day=month.days[di];
+  MOD={type,mid,di};
+  const staff=getStaff()[type]||[];
+  document.getElementById('modal-title').textContent=`Edit Duties — ${day.day}, ${day.date} गते`;
+  document.getElementById('modal-sub').textContent=`${month.name}${month.nepali?' · '+month.nepali:''} · ${day.isoDate||''}`;
+  const cur=day.duties||{};
+  document.getElementById('modal-rows').innerHTML=staff.map(n=>`
+    <div class="modal-person-row">
+      <div class="modal-person-name"><div class="avatar">${initials(n)}</div>${n}</div>
+      <select class="modal-sh-sel" id="msel-${n}">${shiftOpts(type,cur[n]||'xx')}</select>
+    </div>`).join('');
+  document.getElementById('edit-modal').style.display='flex';
+}
+function closeModal(){document.getElementById('edit-modal').style.display='none';}
+function bgClose(e){if(e.target===document.getElementById('edit-modal'))closeModal();}
+function saveModal(){
+  if(!IA){toast('Admin access required','err');closeModal();return;}
+  const r=getRoster();
+  const month=(r[MOD.type]||[]).find(m=>m.id===MOD.mid);
+  if(!month)return;
+  const day=month.days[MOD.di];if(!day.duties)day.duties={};
+  getStaff()[MOD.type].forEach(n=>{
+    const sel=document.getElementById('msel-'+n);
+    if(sel)day.duties[n]=sel.value;
+  });
+  saveRoster(r);closeModal();renderEditList();
+  renderMine();renderCal();renderToday();
+  toast('Duties updated ✓');
+}
+
+// ─── SUB-ADMINS ────────────────────────────────────────────────────────────────
+function renderSubAdmins(){
+  const admins=getAdmins();
+  document.getElementById('sub-admin-list').innerHTML=admins.length
+    ?admins.map((a,i)=>`<div class="list-row">
+        <div>
+          <div class="list-main">${a.name}</div>
+          <div class="list-sub">PIN: ${'•'.repeat(a.pin.length)}</div>
+          <div class="sa-perms">
+            ${a.perm==='all'?'<span class="perm-tag pt-all">All rosters</span>':a.perm==='obs'?'<span class="perm-tag pt-obs">Observer only</span>':'<span class="perm-tag pt-fore">Forecaster only</span>'}
+          </div>
+        </div>
+        <div class="list-actions">
+          <button class="btn-a btn-sm" onclick="editSubPIN(${i})">Change PIN</button>
+          <button class="btn-d btn-sm" onclick="removeSubAdmin(${i})">Remove</button>
+        </div>
+      </div>`).join('')
+    :'<p style="font-size:12px;color:var(--text3)">No sub-admins yet.</p>';
+}
+function addSubAdmin(){
+  const name=document.getElementById('sa-name').value.trim();
+  const pin=document.getElementById('sa-pin').value.trim();
+  const perm=document.getElementById('sa-perm').value;
+  if(!name||pin.length<4){toast('Name & 4-digit PIN required','err');return;}
+  if(pin===getMPin()){toast('Cannot use master PIN','err');return;}
+  const admins=getAdmins();
+  if(admins.find(a=>a.name===name)){toast('Username already taken','err');return;}
+  admins.push({name,pin,perm});saveAdmins(admins);
+  document.getElementById('sa-name').value='';document.getElementById('sa-pin').value='';
+  renderSubAdmins();toast('Sub-admin added: '+name);
+}
+function removeSubAdmin(i){
+  const a=getAdmins();if(!confirm('Remove "'+a[i].name+'"?'))return;
+  a.splice(i,1);saveAdmins(a);renderSubAdmins();toast('Removed');
+}
+function editSubPIN(i){
+  const a=getAdmins();
+  const np=prompt('New PIN for "'+a[i].name+'" (4-6 digits):');
+  if(!np||np.length<4){toast('PIN must be 4+ digits','err');return;}
+  if(np===getMPin()){toast('Cannot use master PIN','err');return;}
+  a[i].pin=np;saveAdmins(a);renderSubAdmins();toast('PIN updated');
+}
+function saveMasterPin(){
+  const pin=document.getElementById('master-pin-inp').value.trim();
+  if(pin.length<4){toast('PIN must be 4+ digits','err');return;}
+  ss4(K.MP,pin);toast('Master PIN updated');
+  document.getElementById('master-pin-inp').value='';
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ─── GOOGLE DRIVE INTEGRATION ─────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+
+function refreshDriveUI(){
+  const cfg=getGDConfig();
+  const statusBox=document.getElementById('drive-status-box');
+  const folderSection=document.getElementById('drive-folder-section');
+  const connectBtn=document.getElementById('drive-connect-btn');
+  const connectLabel=document.getElementById('drive-connect-label');
+  const stepNum=document.getElementById('upload-step-num');
+  if(GD_TOKEN){
+    statusBox.className='gdrive-status gd-connected';
+    statusBox.innerHTML='<div class="gd-dot gd-dot-green"></div><div><strong>Google Drive Connected</strong><br><span style="font-size:11px;opacity:.8">Ready to browse and upload to the Roster folder</span></div>';
+    connectLabel.textContent='✓ Reconnect Google Drive';
+    folderSection.style.display='block';
+    if(stepNum)stepNum.textContent='3';
+  }else if(cfg.clientId){
+    statusBox.className='gdrive-status gd-disconnected';
+    statusBox.innerHTML='<div class="gd-dot gd-dot-amber"></div><div><strong>Client ID saved – not yet authenticated</strong><br><span style="font-size:11px;opacity:.8">Click Connect to authenticate</span></div>';
+    connectLabel.textContent='🔗 Sign in to Google Drive';
+    folderSection.style.display='none';
+    if(stepNum)stepNum.textContent='2';
+  }else{
+    statusBox.className='gdrive-status gd-disconnected';
+    statusBox.innerHTML='<div class="gd-dot gd-dot-amber"></div><div><strong>Not connected</strong><br><span style="font-size:11px;opacity:.8">Connect Google Drive to also save uploads to the Roster folder</span></div>';
+    connectLabel.textContent='🔗 Connect Google Drive';
+    folderSection.style.display='none';
+    if(stepNum)stepNum.textContent='2';
+  }
+}
+
+function connectGoogleDrive(){
+  const cfg=getGDConfig();
+  if(!cfg.clientId){
+    document.getElementById('gd-client-id').value=cfg.clientId||'';
+    document.getElementById('drive-modal').style.display='flex';
+    return;
+  }
+  // Already have client ID — attempt OAuth
+  startGoogleOAuth(cfg.clientId);
+}
+
+function closeDriveModal(){
+  document.getElementById('drive-modal').style.display='none';
+}
+
+function initGoogleDrive(){
+  const clientId=document.getElementById('gd-client-id').value.trim();
+  if(!clientId){toast('Enter your Google Client ID','err');return;}
+  const cfg=getGDConfig();cfg.clientId=clientId;saveGDConfig(cfg);
+  closeDriveModal();
+  startGoogleOAuth(clientId);
+}
+
+function startGoogleOAuth(clientId){
+  // Google Identity Services (GIS) — popup based, complies with Google OAuth policy
+  const scope='https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly';
+  function launchGIS(){
+    const client=google.accounts.oauth2.initTokenClient({
+      client_id:clientId,
+      scope:scope,
+      callback:(resp)=>{
+        if(resp.error){toast('Google sign-in failed: '+resp.error,'err');return;}
+        GD_TOKEN=resp.access_token;
+        refreshDriveUI();
+        toast('Google Drive connected ✓','info');
+      }
+    });
+    client.requestAccessToken({prompt:'select_account'});
+  }
+  if(typeof google!=='undefined'&&google.accounts&&google.accounts.oauth2){
+    launchGIS();
+  }else{
+    toast('Loading Google Sign-In…','info');
+    const s=document.createElement('script');
+    s.src='https://accounts.google.com/gsi/client';
+    s.onload=launchGIS;
+    s.onerror=()=>toast('Could not load Google Sign-In library','err');
+    document.head.appendChild(s);
+  }
+}
+
+// Hardcoded MFD Roster folder ID
+const MFD_FOLDER_ID='1lQeZ-6W76YlbYGvmiAch2ZoyeFWc5K4U';
+
+async function scanDriveFolder(){
+  if(!GD_TOKEN){toast('Connect Google Drive first','err');return;}
+  const el=document.getElementById('drive-scan-status');
+  el.className='gs-status gs-loading';el.style.display='block';
+  el.innerHTML='<span class="spinner"></span>Loading MFD Roster folder…';
+  try{
+    GD_FOLDER_ID=MFD_FOLDER_ID;
+    el.innerHTML='<span class="spinner"></span>Connected to Roster folder — loading files…';
+
+    // List XLSX files in the folder
+    const filesResp=await fetch(
+      `https://www.googleapis.com/drive/v3/files?q='${GD_FOLDER_ID}'+in+parents+and+trashed%3Dfalse&fields=files(id,name,modifiedTime,size)&orderBy=modifiedTime+desc`,
+      {headers:{Authorization:`Bearer ${GD_TOKEN}`}}
+    );
+    if(!filesResp.ok)throw new Error('Could not list files in Roster folder.');
+    const filesData=await filesResp.json();
+    const xlsxFiles=(filesData.files||[]).filter(f=>f.name.match(/\.xlsx?$/i));
+    if(!xlsxFiles.length){
+      el.className='gs-status gs-err';
+      el.textContent='❌ No XLSX files found in Roster folder. Upload a file like "Jestha_Roster_mfd.xlsx" to Drive/Roster/';
+      return;
+    }
+    el.className='gs-status gs-ok';
+    el.textContent=`✅ Found ${xlsxFiles.length} XLSX file(s) in Roster folder`;
+    renderDriveFileList(xlsxFiles);
+  }catch(e){
+    el.className='gs-status gs-err';
+    el.textContent='❌ '+e.message;
+  }
+}
+
+function renderDriveFileList(files){
+  const el=document.getElementById('drive-file-list');
+  const latest=files[0]; // already sorted by modifiedTime desc
+  let html=`<div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">Files in Drive/Roster/</div>`;
+  html+=files.map((f,i)=>`
+    <div class="drive-file-row">
+      <div class="dfr-left">
+        <span class="dfr-icon">📊</span>
+        <div>
+          <div class="dfr-name">${f.name} ${i===0?'<span class="dfr-latest">LATEST</span>':''}</div>
+          <div class="dfr-date">Modified: ${new Date(f.modifiedTime).toLocaleDateString()}</div>
+        </div>
+      </div>
+      <button class="btn-o btn-sm" onclick="downloadAndImportDriveFile('${f.id}','${escHtml(f.name)}')">⬇️ Import</button>
+    </div>`).join('');
+  // Auto-load latest
+  html+=`<div style="margin-top:10px"><button class="btn-g btn-fw" onclick="downloadAndImportDriveFile('${latest.id}','${escHtml(latest.name)}')">⚡ Auto-load Latest: ${latest.name}</button></div>`;
+  el.innerHTML=html;
+}
+
+async function downloadAndImportDriveFile(fileId,fileName){
+  if(!GD_TOKEN){toast('Drive token expired, reconnect','err');return;}
+  const el=document.getElementById('drive-scan-status');
+  el.className='gs-status gs-loading';el.style.display='block';
+  el.innerHTML=`<span class="spinner"></span>Downloading ${fileName}…`;
+  try{
+    const resp=await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,{
+      headers:{Authorization:`Bearer ${GD_TOKEN}`}
+    });
+    if(!resp.ok)throw new Error('Download failed: '+resp.status);
+    const arrayBuffer=await resp.arrayBuffer();
+    const wb=XLSX.read(new Uint8Array(arrayBuffer),{type:'array'});
+    const {monthName,nepali}=parseMonthFromFilename(fileName);
+    // Pre-fill the XLSX import form
+    document.getElementById('xlsx-mname').value=monthName;
+    document.getElementById('xlsx-mnepali').value=nepali;
+    XLSX_WB=wb;
+    XLSX_SEL_SHEET=wb.SheetNames[0];
+    renderSheetTabs(wb.SheetNames);
+    document.getElementById('file-preview').style.display='block';
+    document.getElementById('fp-filename').textContent=fileName;
+    document.getElementById('fp-fileinfo').textContent=`${wb.SheetNames.length} sheet(s) · from Google Drive`;
+    el.className='gs-status gs-ok';
+    el.textContent=`✅ Downloaded ${fileName} — review settings below and click Import`;
+    // Scroll to import form
+    document.getElementById('xlsx-import-btn').scrollIntoView({behavior:'smooth'});
+  }catch(e){
+    el.className='gs-status gs-err';
+    el.textContent='❌ '+e.message;
+  }
+}
+
+function parseMonthFromFilename(filename){
+  // Pattern: Jestha_Roster_mfd.xlsx, Baisakh_Roster_mfd.xlsx
+  const base=filename.replace(/\.(xlsx?|xls)$/i,'');
+  const parts=base.split(/[_\-\s]+/);
+  let monthName='',nepali='';
+  for(const p of parts){
+    const lp=p.toLowerCase();
+    for(const[key,val] of Object.entries(NEPALI_MONTH_MAP)){
+      if(lp.includes(key)){
+        monthName=val+' 2083'; // default year — user can change
+        break;
+      }
+    }
+    if(monthName)break;
+  }
+  if(!monthName)monthName=base.replace(/_Roster_mfd/i,'').trim()||'Imported Month';
+  return{monthName,nepali};
+}
+
+function escHtml(s){return s.replace(/'/g,"\\'");}
+
+// ─── UPLOAD FILE TO GOOGLE DRIVE ──────────────────────────────────────────────
+async function uploadFileToDrive(){
+  if(!XLSX_RAW_FILE){toast('No file to upload','err');return;}
+  if(!GD_TOKEN){
+    toast('Connect Google Drive first','err');
+    // Scroll to connect button
+    document.getElementById('drive-connect-btn').scrollIntoView({behavior:'smooth'});
+    return;
+  }
+  const el=document.getElementById('drive-upload-status');
+  const btn=document.getElementById('drive-upload-btn');
+  el.className='gs-status gs-loading';el.style.display='block';
+  el.innerHTML=`<span class="spinner"></span>Uploading ${XLSX_RAW_FILE.name} to Google Drive…`;
+  btn.disabled=true;
+  try{
+    const folderId=MFD_FOLDER_ID;
+    const metadata={name:XLSX_RAW_FILE.name,parents:[folderId]};
+    const form=new FormData();
+    form.append('metadata',new Blob([JSON.stringify(metadata)],{type:'application/json'}));
+    form.append('file',new Blob([XLSX_RAW_FILE.bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+    const resp=await fetch(
+      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',
+      {method:'POST',headers:{Authorization:`Bearer ${GD_TOKEN}`},body:form}
+    );
+    if(!resp.ok){
+      const err=await resp.json().catch(()=>({}));
+      throw new Error(err.error?.message||'Upload failed: '+resp.status);
+    }
+    const file=await resp.json();
+    el.className='gs-status gs-ok';
+    el.innerHTML=`✅ Uploaded <strong>${file.name}</strong> to Google Drive Roster folder successfully!`;
+    btn.textContent='✓ Uploaded to Drive';
+    toast('Uploaded to Drive ✓','info');
+  }catch(e){
+    el.className='gs-status gs-err';
+    el.textContent='❌ '+e.message;
+    btn.disabled=false;
+  }
+}
+
+// ─── XLSX FILE UPLOAD ──────────────────────────────────────────────────────────
+
+function setupDriveDropZone(){
+  const zone=document.getElementById('upload-zone');
+  if(!zone)return;
+  zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag');});
+  zone.addEventListener('dragleave',()=>zone.classList.remove('drag'));
+  zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag');const f=e.dataTransfer.files[0];if(f)processXLSXFile(f);});
+}
+
+function handleDragOver(e){e.preventDefault();}
+function handleDragLeave(e){document.getElementById('upload-zone').classList.remove('drag');}
+function handleDrop(e){e.preventDefault();document.getElementById('upload-zone').classList.remove('drag');const f=e.dataTransfer.files[0];if(f)processXLSXFile(f);}
+function handleFileSelect(e){const f=e.target.files[0];if(f)processXLSXFile(f);}
+
+let XLSX_RAW_FILE=null; // {bytes: ArrayBuffer, name: string}
+
+function processXLSXFile(file){
+  if(!file.name.match(/\.xlsx?$/i)){toast('Please select an XLSX file','err');return;}
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const data=new Uint8Array(ev.target.result);
+      XLSX_WB=XLSX.read(data,{type:'array'});
+      XLSX_SEL_SHEET=XLSX_WB.SheetNames[0];
+      XLSX_RAW_FILE={bytes:ev.target.result,name:file.name}; // store for Drive upload
+      const {monthName,nepali}=parseMonthFromFilename(file.name);
+      document.getElementById('xlsx-mname').value=document.getElementById('xlsx-mname').value||monthName;
+      document.getElementById('xlsx-mnepali').value=document.getElementById('xlsx-mnepali').value||nepali;
+      document.getElementById('fp-filename').textContent=file.name;
+      document.getElementById('fp-fileinfo').textContent=`${XLSX_WB.SheetNames.length} sheet(s) · ${(file.size/1024).toFixed(1)} KB`;
+      renderSheetTabs(XLSX_WB.SheetNames);
+      document.getElementById('file-preview').style.display='block';
+      document.getElementById('drive-upload-section').style.display='none'; // hide until imported
+      toast('File loaded: '+file.name,'info');
+    }catch(e){toast('Could not read file: '+e.message,'err');}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function renderSheetTabs(sheets){
+  const el=document.getElementById('fp-sheets');
+  el.innerHTML=sheets.map((s,i)=>`<div class="fp-sheet${i===0?' sel':''}" onclick="selectSheet(this,'${escHtml(s)}')">${s}</div>`).join('');
+}
+
+function selectSheet(el,name){
+  document.querySelectorAll('.fp-sheet').forEach(e=>e.classList.remove('sel'));
+  el.classList.add('sel');
+  XLSX_SEL_SHEET=name;
+}
+
+function importXLSX(){
+  if(!XLSX_WB||!XLSX_SEL_SHEET){toast('Please select an XLSX file first','err');return;}
+  const mname=document.getElementById('xlsx-mname').value.trim();
+  const mnepali=document.getElementById('xlsx-mnepali').value.trim();
+  const type=document.getElementById('xlsx-type').value||'obs';
+  if(!mname){toast('Enter month name','err');return;}
+  const el=document.getElementById('xlsx-status');
+  el.className='gs-status gs-loading';el.style.display='block';
+  el.innerHTML='<span class="spinner"></span>Parsing XLSX…';
+  try{
+    const ws=XLSX_WB.Sheets[XLSX_SEL_SHEET];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''});
+    const result=parseRosterRows(rows,type,mname,mnepali);
+    if(result.error)throw new Error(result.error);
+    // Save roster
+    const id=type+'-'+mname.toLowerCase().replace(/\s+/g,'-');
+    const r=getRoster();r[type]=r[type]||[];
+    const ei=r[type].findIndex(m=>m.id===id);
+    const mo={id,name:mname,nepali:mnepali,type,startDate:result.startDate,days:result.days,importedAt:new Date().toISOString(),source:'xlsx'};
+    if(ei>=0){if(!confirm('Month "'+mname+'" already exists. Overwrite?'))return;r[type][ei]=mo;}
+    else r[type].push(mo);
+    saveRoster(r);
+    // Update staff list from XLSX
+    const s=getStaff();s[type]=s[type]||[];
+    result.staffNames.forEach(n=>{if(!s[type].includes(n))s[type].push(n);});
+    saveStaff(s);
+    // Log in upload archive
+    const log=getUploadLog();
+    log.unshift({id,name:mname,nepali:mnepali,type,importedAt:new Date().toISOString(),days:result.days.length,staff:result.staffNames.length,source:XLSX_SEL_SHEET});
+    if(log.length>50)log.splice(50);
+    saveUploadLog(log);
+    el.className='gs-status gs-ok';
+    el.textContent=`✅ Imported ${result.days.length} days · ${result.staffNames.length} staff for ${mname}`;
+    renderExistingMonths();fillMonthSelects();populateEdMonths();renderDriveArchive();
+    toast('Imported: '+mname);
+    // Show Drive upload option
+    if(XLSX_RAW_FILE){
+      document.getElementById('drive-upload-section').style.display='block';
+      document.getElementById('drive-upload-status').style.display='none';
+      // Update step numbers based on Drive connection state
+      document.getElementById('upload-step-num').textContent=GD_TOKEN?'3':'2';
+    }
+  }catch(e){
+    el.className='gs-status gs-err';
+    el.textContent='❌ '+e.message;
+  }
+}
+
+// ─── XLSX / SHEET ROW PARSER ──────────────────────────────────────────────────
+function parseRosterRows(rows,type,mname,mnepali){
+  if(!rows||rows.length<2)return{error:'File is empty or has too few rows.'};
+  const SKIP=['mean','total','leave','incharge','agro','check','weekly','note','remark',''];
+  // Find header row containing DAY or गते
+  let hi=rows.findIndex(r=>r.some(c=>c&&(String(c).toUpperCase().includes('DAY')||String(c).includes('गते'))));
+  if(hi<0)hi=0;
+  const headers=rows[hi];
+  // Staff columns: index 3+ skipping known non-staff labels
+  const staffCols=[];
+  headers.forEach((h,i)=>{
+    if(i<3||!h||!String(h).trim())return;
+    const hs=String(h).trim();
+    if(SKIP.some(x=>x&&hs.toLowerCase().includes(x)))return;
+    staffCols.push({name:hs,col:i});
+  });
+  if(!staffCols.length)return{error:'No staff columns found. Expected staff names from column 4 onward in the header row.'};
+  // Update staff
+  const staffNames=staffCols.map(sc=>sc.name);
+  // Parse data rows
+  const days=[];let startDate='';
+  rows.slice(hi+1).forEach(row=>{
+    const numCell=String(row[1]||'').trim();
+    if(!numCell||isNaN(parseInt(numCell)))return;
+    const dateNum=parseInt(numCell);
+    const dayName=String(row[0]||'').trim();
+    let iso='';
+    const rawDate=String(row[2]||'').trim();
+    if(rawDate.match(/^\d{4}-\d{2}-\d{2}/))iso=rawDate.slice(0,10);
+    else if(rawDate){
+      // Try Excel date serial
+      const n=parseFloat(rawDate);
+      if(!isNaN(n)&&n>40000){
+        const d=XLSX.SSF.parse_date_code(n);
+        if(d)iso=`${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+      }else{const d=new Date(rawDate);if(!isNaN(d.getTime()))iso=d.toISOString().split('T')[0];}
+    }
+    if(iso&&!startDate)startDate=iso;
+    const duties={};
+    staffCols.forEach(sc=>{
+      const raw=String(row[sc.col]||'xx').trim();
+      duties[sc.name]=raw||'xx';
+    });
+    days.push({date:dateNum,isoDate:iso,day:dayName,duties});
+  });
+  if(!days.length)return{error:'No duty rows found. Check that the sheet has data rows below the header.'};
+  return{days,staffNames,startDate:startDate||days[0]?.isoDate||''};
+}
+
+function renderDriveArchive(){
+  const log=getUploadLog();
+  const el=document.getElementById('drive-archive-list');
+  if(!el)return;
+  if(!log.length){el.innerHTML='<p style="font-size:12px;color:var(--text3)">No files uploaded yet.</p>';return;}
+  el.innerHTML=log.map((f,i)=>`<div class="drive-file-row">
+    <div class="dfr-left">
+      <span class="dfr-icon">📊</span>
+      <div>
+        <div class="dfr-name">${f.name} ${i===0?'<span class="dfr-latest">LATEST</span>':''} <span class="pill ${f.type==='obs'?'pill-obs':'pill-fore'}">${f.type==='obs'?'OBS':'FORE'}</span></div>
+        <div class="dfr-date">${f.days} days · ${f.staff} staff · imported ${new Date(f.importedAt).toLocaleDateString()} · sheet: ${f.source}</div>
+      </div>
+    </div>
+    <button class="btn-d btn-sm" onclick="removeFromLog(${i})">✕</button>
+  </div>`).join('');
+}
+
+function removeFromLog(i){
+  const log=getUploadLog();log.splice(i,1);saveUploadLog(log);renderDriveArchive();
+}
+
+// ─── GOOGLE SHEETS (URL / CSV — no API key) ────────────────────────────────────
+function extractSheetId(url){
+  const m=url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  return m?m[1]:null;
+}
+function buildCsvUrl(sheetId,tabName){
+  const base=`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv`;
+  return tabName?base+`&sheet=${encodeURIComponent(tabName)}`:base;
+}
+function parseCSV(text){
+  const rows=[];let row=[],cur='',inQ=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i],n=text[i+1];
+    if(inQ){if(c==='"'&&n==='"'){cur+='"';i++;}else if(c==='"'){inQ=false;}else{cur+=c;}}
+    else{if(c==='"'){inQ=true;}else if(c===','){row.push(cur.trim());cur='';}
+    else if(c==='\n'){row.push(cur.trim());rows.push(row);row=[];cur='';}
+    else if(c==='\r'){}else{cur+=c;}}
+  }
+  if(cur||row.length){row.push(cur.trim());rows.push(row);}
+  return rows.filter(r=>r.some(c=>c));
+}
+
+async function importSheets(){
+  const obsUrl=document.getElementById('gs-obs-url').value.trim();
+  const obsTab=document.getElementById('gs-obs-tab').value.trim();
+  const foreUrl=document.getElementById('gs-fore-url').value.trim();
+  const foreTab=document.getElementById('gs-fore-tab').value.trim();
+  const mname=document.getElementById('gs-mname').value.trim();
+  const mnepali=document.getElementById('gs-mnepali').value.trim();
+  if(!mname){toast('Month name is required','err');return;}
+  if(!obsUrl&&!foreUrl){toast('Paste at least one Google Sheet URL','err');return;}
+  if(obsUrl){
+    const sid=extractSheetId(obsUrl);
+    if(!sid){showGSStat('gs-stat-obs','❌ Could not read spreadsheet ID from Observer URL','err');return;}
+    await runSheetImport(sid,obsTab,'obs',mname,mnepali,'gs-stat-obs');
+  }
+  if(foreUrl){
+    const sid=extractSheetId(foreUrl);
+    if(!sid){showGSStat('gs-stat-fore','❌ Could not read spreadsheet ID from Forecaster URL','err');return;}
+    await runSheetImport(sid,foreTab,'fore',mname,mnepali,'gs-stat-fore');
+  }
+  renderExistingMonths();fillMonthSelects();populateEdMonths();
+}
+
+function showGSStat(id,msg,cls){
+  const el=document.getElementById(id);
+  el.style.display='block';
+  el.className='gs-status '+(cls==='ok'?'gs-ok':cls==='err'?'gs-err':'gs-loading');
+  el.textContent=msg;
+}
+
+async function runSheetImport(sheetId,tabName,type,mname,mnepali,statId){
+  const el=document.getElementById(statId);
+  el.className='gs-status gs-loading';el.style.display='block';
+  el.innerHTML='<span class="spinner"></span>Connecting to Google Sheets…';
+  try{
+    const sheetParam=tabName?`&sheet=${encodeURIComponent(tabName)}`:'';
+    const url=`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json${sheetParam}`;
+    const rows=await new Promise((resolve,reject)=>{
+      const cbName='_gsCb_'+Date.now();
+      const script=document.createElement('script');
+      const timer=setTimeout(()=>{cleanup();reject(new Error('Timed out. Make sure the sheet is shared as "Anyone with the link → Viewer".'));},15000);
+      function cleanup(){clearTimeout(timer);delete window[cbName];if(script.parentNode)script.parentNode.removeChild(script);}
+      window[cbName]=function(resp){
+        cleanup();
+        try{
+          const table=resp.table;
+          if(!table||!table.rows)return reject(new Error('Sheet returned no data.'));
+          const cols=table.cols||[];const result=[];
+          result.push(cols.map(c=>c.label||c.id||''));
+          (table.rows||[]).forEach(r=>{result.push((r.c||[]).map(cell=>{if(!cell||cell.v===null||cell.v===undefined)return '';return String(cell.v).trim();}));});
+          resolve(result);
+        }catch(e){reject(new Error('Could not parse sheet data: '+e.message));}
+      };
+      script.src=url+'&tq=select *&tqx=out:json;responseHandler:'+cbName;
+      script.onerror=()=>{cleanup();reject(new Error('Could not load sheet. Check sharing settings.'));};
+      document.head.appendChild(script);
+    });
+    if(!rows||rows.length<2)throw new Error('Sheet appears empty.');
+    const result=parseRosterRows(rows,type,mname,mnepali);
+    if(result.error)throw new Error(result.error);
+    const s=getStaff();s[type]=s[type]||[];
+    result.staffNames.forEach(n=>{if(!s[type].includes(n))s[type].push(n);});
+    saveStaff(s);
+    const id=type+'-'+mname.toLowerCase().replace(/\s+/g,'-');
+    const r=getRoster();r[type]=r[type]||[];
+    const ei=r[type].findIndex(m=>m.id===id);
+    const mo={id,name:mname,nepali:mnepali,type,startDate:result.startDate,days:result.days,importedAt:new Date().toISOString(),source:'sheets'};
+    if(ei>=0){if(!confirm('Month "'+mname+'" already exists. Overwrite?'))return;r[type][ei]=mo;}
+    else r[type].push(mo);
+    saveRoster(r);
+    el.className='gs-status gs-ok';
+    el.textContent=`✅ Imported ${result.days.length} days · ${result.staffNames.length} staff from "${tabName||'Sheet 1'}"`;
+  }catch(e){
+    el.className='gs-status gs-err';
+    el.textContent='❌ '+e.message;
+  }
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+function toast(msg,cls=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className='toast'+(cls==='err'?' err-t':cls==='info'?' info-t':'');
+  t.classList.add('show');clearTimeout(t._t);
+  t._t=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ─── PWA SETUP ────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Generate SVG icon as base64
+function getPWAIcon(size){
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <rect width="${size}" height="${size}" rx="${size*0.2}" fill="#0f172a"/>
+    <rect x="${size*0.08}" y="${size*0.08}" width="${size*0.84}" height="${size*0.84}" rx="${size*0.15}" fill="#1e293b" stroke="#38bdf8" stroke-width="${size*0.03}"/>
+    <text x="50%" y="54%" font-family="-apple-system,sans-serif" font-weight="700" font-size="${size*0.38}" fill="#38bdf8" text-anchor="middle" dominant-baseline="middle">MFD</text>
+    <text x="50%" y="78%" font-family="-apple-system,sans-serif" font-weight="500" font-size="${size*0.14}" fill="#94a3b8" text-anchor="middle" dominant-baseline="middle">ROSTER</text>
+  </svg>`;
+  return 'data:image/svg+xml;base64,'+btoa(svg);
+}
+
+// Inject PWA manifest dynamically
+(function injectManifest(){
+  const icon192=getPWAIcon(192);
+  const icon512=getPWAIcon(512);
+  const manifest={
+    name:'MFD Duty Roster',
+    short_name:'MFD Roster',
+    description:'MFD Duty Roster — Dept. of Hydrology & Meteorology, Nepal',
+    start_url:window.location.pathname,
+    display:'standalone',
+    background_color:'#0f172a',
+    theme_color:'#0f172a',
+    orientation:'portrait-primary',
+    icons:[
+      {src:icon192,sizes:'192x192',type:'image/svg+xml',purpose:'any maskable'},
+      {src:icon512,sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'}
+    ]
+  };
+  const blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  document.getElementById('pwa-manifest').href=url;
+  // Apple touch icon
+  document.getElementById('apple-touch-icon').href=icon192;
+})();
+
+// Register service worker (inline via blob)
+(function registerSW(){
+  if(!('serviceWorker' in navigator))return;
+  const swCode=`
+const CACHE='mfd-roster-v1';
+const ASSETS=[self.location.pathname||'/'];
+self.addEventListener('install',e=>{
+  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()));
+});
+self.addEventListener('activate',e=>{
+  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));
+});
+self.addEventListener('fetch',e=>{
+  if(e.request.method!=='GET')return;
+  if(e.request.url.includes('googleapis.com')||e.request.url.includes('cdnjs'))return;
+  e.respondWith(caches.match(e.request).then(cached=>{
+    if(cached)return cached;
+    return fetch(e.request).then(resp=>{
+      if(resp&&resp.status===200&&resp.type==='basic'){
+        const clone=resp.clone();
+        caches.open(CACHE).then(c=>c.put(e.request,clone));
+      }
+      return resp;
+    }).catch(()=>cached);
+  }));
+});`;
+  const blob=new Blob([swCode],{type:'application/javascript'});
+  const swUrl=URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl,{scope:'/'}).catch(()=>{
+    // scope fallback — try without scope
+    navigator.serviceWorker.register(swUrl).catch(()=>{});
+  });
+})();
+
+// ─── INSTALL PROMPT ───────────────────────────────────────────────────────────
+let deferredInstallPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  deferredInstallPrompt=e;
+  showInstallBanner();
+});
+window.addEventListener('appinstalled',()=>{
+  hideInstallBanner();
+  toast('App installed! ✓','info');
+});
+
+function showInstallBanner(){
+  let b=document.getElementById('install-banner');
+  if(!b){
+    b=document.createElement('div');
+    b.id='install-banner';
+    b.style.cssText='position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid #38bdf8;border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px;z-index:8888;box-shadow:0 4px 24px rgba(0,0,0,.5);white-space:nowrap;max-width:92vw';
+    b.innerHTML=`
+      <span style="font-size:20px">📲</span>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#f1f5f9">Install MFD Roster</div>
+        <div style="font-size:11px;color:#94a3b8">Add to home screen for offline access</div>
+      </div>
+      <button onclick="doInstall()" style="background:#38bdf8;color:#0c1a27;border:none;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">Install</button>
+      <button onclick="hideInstallBanner()" style="background:none;border:none;color:#64748b;font-size:18px;cursor:pointer;padding:0 4px;flex-shrink:0">✕</button>`;
+    document.body.appendChild(b);
+  }
+  b.style.display='flex';
+}
+
+function hideInstallBanner(){
+  const b=document.getElementById('install-banner');
+  if(b)b.style.display='none';
+}
+
+async function doInstall(){
+  if(!deferredInstallPrompt)return;
+  deferredInstallPrompt.prompt();
+  const{outcome}=await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt=null;
+  if(outcome==='accepted')toast('Installing…','info');
+  hideInstallBanner();
+}
+
+// iOS Safari — show manual install tip (no beforeinstallprompt on iOS)
+(function iOSInstallHint(){
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone=window.navigator.standalone===true;
+  if(isIOS&&!isStandalone){
+    setTimeout(()=>{
+      let b=document.getElementById('install-banner');
+      if(b&&b.style.display!=='none')return; // already showing install banner
+      if(!b){
+        b=document.createElement('div');
+        b.id='install-banner';
+        b.style.cssText='position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid #38bdf8;border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px;z-index:8888;box-shadow:0 4px 24px rgba(0,0,0,.5);max-width:92vw';
+        b.innerHTML=`
+          <span style="font-size:20px">📲</span>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;color:#f1f5f9">Install on iPhone</div>
+            <div style="font-size:11px;color:#94a3b8">Tap <strong style="color:#38bdf8">Share ↑</strong> then <strong style="color:#38bdf8">Add to Home Screen</strong></div>
+          </div>
+          <button onclick="hideInstallBanner()" style="background:none;border:none;color:#64748b;font-size:18px;cursor:pointer;padding:0 4px;flex-shrink:0">✕</button>`;
+        document.body.appendChild(b);
+      }
+      b.style.display='flex';
+    },3000);
+  }
+})();
+</script>
+</body>
+</html>
